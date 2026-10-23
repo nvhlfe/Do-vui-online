@@ -122,6 +122,7 @@ footer{color:var(--mut);text-align:center;font-size:13px;padding:28px 10px 36px}
 select.setpick{font-size:16px}
 .hostbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .hostbar .btn{flex:1;min-width:150px}
+.flip-x{display:inline-block;transform:scaleX(-1)}
 .wheel-wrap{position:relative;width:min(74vw,560px);margin:8px auto}
 #wheelCanvas{width:100%;height:auto;display:block}
 .wheel-pointer{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:36px;color:var(--a);z-index:3;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,.25)}
@@ -293,7 +294,7 @@ body.joinmode nav.tabs{display:none!important}
           <option value="slot">🎰 Quay chữ / số (ra mã trúng thưởng)</option>
         </select>
         <div id="ldNamesBlock">
-          <label>Danh sách người tham gia (mỗi dòng 1 người) — không giới hạn số người</label>
+          <label id="ldNamesLabel">Danh sách người tham gia (mỗi dòng 1 người) — không giới hạn số người</label>
           <textarea id="raceNames" rows="7" placeholder="Nguyễn Văn A&#10;Trần Thị B&#10;Lê Văn C&#10;…" oninput="raceParseNames()"></textarea>
           <div class="row" style="margin-top:6px">
             <div class="sub" id="raceCount">0 người trong danh sách</div>
@@ -329,7 +330,7 @@ body.joinmode nav.tabs{display:none!important}
             <div><label>Số ký tự</label>
               <input type="number" id="slotLen" value="4" min="1" max="12" step="1"></div>
           </div>
-          <div class="sub">Các ký tự chạy như máy quay số rồi dừng lại lần lượt từng ô — hợp để quay mã số in trên vé/phiếu của mỗi người.</div>
+          <div class="sub">Có danh sách “Tên - Mã” ở trên thì quay theo mã của từng người: mã dừng đủ ký tự là hiện tên người trúng. Để trống danh sách thì quay ký tự tự do theo loại + số ký tự dưới đây.</div>
         </div>
         <div style="margin-top:14px"><button class="btn" id="ldStartBtn" onclick="ldStart()">🏁 Mở màn hình đua</button></div>
         <div class="sub">Mẹo: sao chép cột tên từ Excel rồi dán thẳng vào ô danh sách cũng được. Sau khi có người thắng, bấm “Đua tiếp / Quay tiếp” để loại người đó ra và tìm giải tiếp theo.</div>
@@ -1162,10 +1163,10 @@ function fxAfterRender(room) {
 <script>
 /* ================= LUCKY DRAW — CUỘC ĐUA MAY MẮN ================= */
 const RACE_THEMES = {
-  car:   { label: "🏎️ Đua xe",        icon: "🏎️", track: "linear-gradient(180deg,#5b6472,#49505c)", deco: "💨" },
-  boat:  { label: "🚣 Chèo thuyền",   icon: "🚣", track: "linear-gradient(180deg,#7ecbf2,#4aa8dd)", deco: "🌊" },
-  horse: { label: "🐎 Đua ngựa",      icon: "🐎", track: "linear-gradient(180deg,#a5d6a7,#7cb342)", deco: "💨" },
-  duck:  { label: "🦆 Đua vịt",       icon: "🦆", track: "linear-gradient(180deg,#aee7ff,#6ec6e8)", deco: "〰️" },
+  car:   { label: "🏎️ Đua xe",        icon: "🏎️", flip: true, track: "linear-gradient(180deg,#5b6472,#49505c)", deco: "💨" },
+  boat:  { label: "🚣 Chèo thuyền",   icon: "🚣", flip: true, track: "linear-gradient(180deg,#7ecbf2,#4aa8dd)", deco: "🌊" },
+  horse: { label: "🐎 Đua ngựa",      icon: "🐎", flip: true, track: "linear-gradient(180deg,#a5d6a7,#7cb342)", deco: "💨" },
+  duck:  { label: "🦆 Đua vịt",       icon: "🦆", flip: true, track: "linear-gradient(180deg,#aee7ff,#6ec6e8)", deco: "〰️" },
   climb: { label: "🧗 Leo thang",     icon: "🧗", track: "repeating-linear-gradient(90deg,#f3d9a4 0 34px,#e8c07a 34px 68px)", deco: "⭐" }
 };
 let race = { active: false, names: [], allNames: [], winners: [], prize: "", theme: "car", dur: 30, racers: [], running: false, finished: false, winner: null, order: [], timer: null, lastLeader: null, comment: "", pace: 1, countStep: 700 };
@@ -1241,14 +1242,14 @@ function raceRender() {
     track.className = "race-swarm";
     track.style.background = th.track;
     track.innerHTML = `<span class="swarm-flag">🏁</span>` + race.racers.map((r, i) => `
-      <span class="token" id="racer-${i}" style="top:${6 + (i * 53) % 86}%"><i>${th.icon}</i><em class="tok-name">${esc(r.name)}</em></span>`).join("");
+      <span class="token" id="racer-${i}" style="top:${6 + (i * 53) % 86}%"><i class="${th.flip ? "flip-x" : ""}">${th.icon}</i><em class="tok-name">${esc(r.name)}</em></span>`).join("");
     track.insertAdjacentHTML("afterend", `<div class="race-topbar" id="raceTopBar">🏆 Đang dẫn đầu: … — tổng ${race.racers.length} người đang đua</div>`);
   } else {
     track.innerHTML = race.racers.map((r, i) => `
     <div class="lane" id="lane-${i}">
       <div class="lane-fill" id="fill-${i}"></div>
       <span class="lane-name">${esc(r.name)}</span>
-      <span class="racer" id="racer-${i}">${th.icon}</span>
+      <span class="racer" id="racer-${i}">${th.flip ? `<span class="flip-x">${th.icon}</span>` : th.icon}</span>
       <span class="lane-flag">🏁</span>
     </div>`).join("");
   }
@@ -1388,11 +1389,20 @@ function confettiBurst() {
 /* ================= LUCKY DRAW: ĐIỀU PHỐI HÌNH THỨC ================= */
 function ldFormatChange() {
   const f = $("ldFormat") ? $("ldFormat").value : "race";
-  const race = $("ldRaceOpts"), slot = $("ldSlotOpts"), names = $("ldNamesBlock"), btn = $("ldStartBtn");
+  const race = $("ldRaceOpts"), slot = $("ldSlotOpts"), btn = $("ldStartBtn");
   if (race) race.classList.toggle("hidden", f !== "race");
   if (slot) slot.classList.toggle("hidden", f !== "slot");
-  if (names) names.classList.toggle("hidden", f === "slot");
-  if (btn) btn.textContent = f === "race" ? "🏁 Mở màn hình đua" : f === "wheel" ? "🎡 Mở vòng quay" : "🎰 Mở màn hình quay";
+  if (btn) btn.textContent = f === "race" ? "🏁 Mở màn hình đua" : f === "wheel" ? "🎡 Mở vòng quay" : "🎰 Mở màn hình quay mã";
+  const lbl = $("ldNamesLabel"), ta = $("raceNames");
+  if (lbl && ta) {
+    if (f === "slot") {
+      lbl.textContent = "Danh sách quay: mỗi dòng ‘Tên - Mã quay’ (VD: Nguyễn Văn A - 60786630). Để trống nếu muốn quay ký tự tự do.";
+      ta.placeholder = "Nguyễn Văn A - 60786630\nTrần Thị B - 12345678\n…";
+    } else {
+      lbl.textContent = "Danh sách người tham gia (mỗi dòng 1 người) — không giới hạn số người";
+      ta.placeholder = "Nguyễn Văn A\nTrần Thị B\nLê Văn C\n…";
+    }
+  }
 }
 function ldStart() {
   const f = $("ldFormat") ? $("ldFormat").value : "race";
@@ -1517,70 +1527,120 @@ function wheelNext() {
 }
 function wheelAgain() { wheel.names = wheel.allNames.slice(); wheel.winners = []; wheel.winner = null; wheelRender(); }
 
-/* ================= QUAY CHỮ / SỐ ================= */
+/* ================= QUAY MÃ THEO DANH SÁCH "TÊN - MÃ" / QUAY TỰ DO ================= */
 const SLOT_SETS = {
   digits: "0123456789",
   letters: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
   both: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 };
-let slot = { active: false, len: 4, charset: "digits", prize: "", result: "", history: [], spinning: false, pace: 1 };
+let slot = { active: false, mode: "list", entries: [], pool: [], winners: [], lastWinner: null, len: 4, charset: "digits", prize: "", result: "", history: [], spinning: false, pace: 1, reelLen: 6 };
 window.SLOT = slot;
 window.SLOT_Render = () => slotRender();
+function parseSlotEntries() {
+  const raw = ($("raceNames") ? $("raceNames").value : "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  return raw.map(line => {
+    const m = line.match(/^(.*?)[\s]*[-–—|\t,]\s*([A-Za-z0-9]+)\s*$/);
+    if (m && m[1].trim()) return { name: m[1].trim(), code: m[2].trim().toUpperCase() };
+    return { name: line, code: line.toUpperCase() };
+  });
+}
 function slotSetup() {
-  slot.len = Math.max(1, Math.min(12, parseInt($("slotLen").value, 10) || 4));
-  slot.charset = $("slotCharset").value || "digits";
+  slot.entries = parseSlotEntries();
   slot.prize = $("racePrize").value.trim() || "Giải may mắn";
-  slot.result = ""; slot.history = []; slot.spinning = false; slot.active = true;
+  slot.winners = []; slot.lastWinner = null; slot.result = ""; slot.history = []; slot.spinning = false;
+  if (slot.entries.length) {
+    slot.mode = "list"; slot.pool = slot.entries.slice();
+    slot.reelLen = slot.entries[0].code.length;
+  } else {
+    slot.mode = "free";
+    slot.len = Math.max(1, Math.min(12, parseInt($("slotLen").value, 10) || 4));
+    slot.charset = $("slotCharset").value || "digits";
+    slot.reelLen = slot.len;
+  }
+  slot.active = true;
   window.STAGE_MODE = "slot";
   go("stage");
 }
 function slotBar() {
-  return `<div class="stage-bar"><span class="pill">🎰 QUAY CHỮ/SỐ</span><span class="sub">${esc(slot.prize)}</span><span class="sp"></span><button class="btn small alt" onclick="slotClose()">✕ Đóng & về Admin</button></div>`;
+  return `<div class="stage-bar"><span class="pill">🎰 QUAY MÃ MAY MẮN</span><span class="sub">${esc(slot.prize)}</span><span class="sp"></span><button class="btn small alt" onclick="slotClose()">✕ Đóng & về Admin</button></div>`;
 }
 function slotClose() { slot.active = false; slot.spinning = false; window.STAGE_MODE = null; go("admin"); }
 function slotRender() {
   const box = $("host-room"); if (!box) return;
-  const setLabel = slot.charset === "digits" ? "chỉ số 0–9" : slot.charset === "letters" ? "chỉ chữ A–Z" : "số + chữ";
+  const listMode = slot.mode === "list";
+  const shown = slot.result || "";
+  const reelsCount = slot.reelLen || 4;
   box.innerHTML = slotBar() + `
     <div class="card stage-center">
-      <span class="pill">🎁 ${esc(slot.prize)} · ${slot.len} ký tự · ${setLabel}</span>
-      <div class="stage-title" style="font-size:clamp(30px,5.4vw,48px)">Quay chữ / số may mắn</div>
-      <div class="slot-row">${Array.from({ length: slot.len }, (_, i) => `<span class="slot-reel" id="reel-${i}">${slot.result ? esc(slot.result[i] || "?") : "?"}</span>`).join("")}</div>
-      <div id="slotResult">${slot.result ? `<div class="sub" style="font-size:18px">Kết quả: <b style="color:var(--purple);font-size:24px">${esc(slot.result)}</b> — ai đang giữ mã này thì lên nhận giải nhé! 🎉</div>` : `<div class="sub">Bấm QUAY để các ký tự chạy và dừng lại lần lượt…</div>`}</div>
-      <button class="btn stage-start" id="slotSpinBtn" onclick="slotSpin()">🎰 QUAY THÔI!</button>
-      ${slot.history.length ? `<div style="margin-top:14px"><div class="sub">Các kết quả đã quay:</div>${slot.history.map(h => `<span class="my-chip" style="font-size:16px;letter-spacing:2px"><b>${esc(h)}</b></span>`).join("")}</div>` : ""}
+      <span class="pill">🎁 ${esc(slot.prize)}${listMode ? ` · ${slot.entries.length} người trong danh sách · còn ${slot.pool.length} lượt chưa trúng` : ` · quay ký tự tự do`}</span>
+      <div class="stage-title" style="font-size:clamp(30px,5.4vw,48px)">${listMode ? "Quay mã trúng thưởng" : "Quay chữ / số may mắn"}</div>
+      <div class="slot-row">${Array.from({ length: reelsCount }, (_, i) => `<span class="slot-reel${shown ? " stopped" : ""}" id="reel-${i}">${shown ? esc(shown[i] || "?") : "?"}</span>`).join("")}</div>
+      <div id="slotResult">${slot.lastWinner
+        ? `<div class="sub" style="font-size:19px">🎉 Mã <b style="letter-spacing:2px">${esc(slot.lastWinner.code)}</b> thuộc về</div><div class="stage-title" style="margin:0">${esc(slot.lastWinner.name)}</div>`
+        : (shown && !listMode
+          ? `<div class="sub" style="font-size:18px">Kết quả: <b style="color:var(--purple);font-size:24px;letter-spacing:2px">${esc(shown)}</b> — ai đang giữ mã này thì lên nhận giải nhé! 🎉</div>`
+          : `<div class="sub">${listMode ? "Bấm QUAY để quay mã của một người may mắn — mã sẽ hiện dần từng ký tự…" : "Bấm QUAY để các ký tự chạy và dừng lại lần lượt…"}</div>`)}</div>
+      ${listMode && !slot.pool.length
+        ? `<div class="sub" style="margin-top:10px">Đã quay hết danh sách rồi!</div><button class="btn alt" onclick="slotAgain()">🔁 Quay lại từ đầu</button>`
+        : `<button class="btn stage-start" id="slotSpinBtn" onclick="slotSpin()">${listMode && slot.winners.length ? "🎰 QUAY TIẾP" : "🎰 QUAY THÔI!"}</button>`}
+      ${slot.winners.length ? `<div style="margin-top:14px"><div class="sub">🏆 Đã trúng ${slot.winners.length} giải:</div>${slot.winners.map((e, i) => `<span class="my-chip">${i + 1}. <b>${esc(e.name)}</b> · mã ${esc(e.code)}</span>`).join("")}</div>` : ""}
+      ${!listMode && slot.history.length ? `<div style="margin-top:14px"><div class="sub">Các kết quả đã quay:</div>${slot.history.map(h => `<span class="my-chip" style="font-size:16px;letter-spacing:2px"><b>${esc(h)}</b></span>`).join("")}</div>` : ""}
     </div>
     <div id="confettiBox"></div>`;
 }
-function slotSpin() {
-  if (slot.spinning) return;
-  slot.spinning = true; slot.result = "";
-  const btn = $("slotSpinBtn"); if (btn) btn.classList.add("hidden");
-  const chars = SLOT_SETS[slot.charset] || SLOT_SETS.digits;
-  const finals = Array.from({ length: slot.len }, () => chars[Math.floor(Math.random() * chars.length)]);
+function slotAgain() { slot.pool = slot.entries.slice(); slot.winners = []; slot.lastWinner = null; slot.result = ""; slotRender(); }
+function runReels(finals, chars, done) {
   const pace = Math.max(0.2, slot.pace || 1);
   let stopped = 0;
-  for (let i = 0; i < slot.len; i++) {
-    const el = $("reel-" + i);
-    if (el) el.classList.remove("stopped");
+  finals.forEach((fin, i) => {
     const iv = setInterval(() => { const e2 = $("reel-" + i); if (e2) e2.textContent = chars[Math.floor(Math.random() * chars.length)]; }, 50);
     setTimeout(() => {
       clearInterval(iv);
       const e3 = $("reel-" + i);
-      if (e3) { e3.textContent = finals[i]; e3.classList.add("stopped"); }
+      if (e3) { e3.textContent = fin; e3.classList.add("stopped"); }
       if (typeof sfxPop === "function") sfxPop();
       stopped++;
-      if (stopped === slot.len) {
-        slot.result = finals.join("");
-        slot.history.unshift(slot.result);
-        slot.spinning = false;
-        if (typeof sfxVictory === "function") sfxVictory();
-        slotRender();
-        if (typeof confettiBurst === "function") confettiBurst();
-      }
+      if (stopped === finals.length) done();
     }, (850 + i * 780) / pace);
+  });
+}
+function slotSpin() {
+  if (slot.spinning) return;
+  if (slot.mode === "list") {
+    if (!slot.pool.length) return;
+    slot.spinning = true;
+    const target = slot.pool[Math.floor(Math.random() * slot.pool.length)];
+    slot.reelLen = target.code.length;
+    slot.result = ""; slot.lastWinner = null;
+    slotRender();
+    const btn = $("slotSpinBtn"); if (btn) btn.classList.add("hidden");
+    const chars = /\D/.test(target.code) ? SLOT_SETS.both : SLOT_SETS.digits;
+    runReels(target.code.split(""), chars, () => {
+      slot.result = target.code;
+      slot.lastWinner = target;
+      slot.pool = slot.pool.filter(e => e !== target);
+      slot.winners.push(target);
+      slot.spinning = false;
+      if (typeof sfxVictory === "function") sfxVictory();
+      slotRender();
+      if (typeof confettiBurst === "function") confettiBurst();
+    });
+  } else {
+    slot.spinning = true; slot.result = "";
+    const btn = $("slotSpinBtn"); if (btn) btn.classList.add("hidden");
+    const chars = SLOT_SETS[slot.charset] || SLOT_SETS.digits;
+    const finals = Array.from({ length: slot.len }, () => chars[Math.floor(Math.random() * chars.length)]);
+    runReels(finals, chars, () => {
+      slot.result = finals.join("");
+      slot.history.unshift(slot.result);
+      slot.spinning = false;
+      if (typeof sfxVictory === "function") sfxVictory();
+      slotRender();
+      if (typeof confettiBurst === "function") confettiBurst();
+    });
   }
 }
+</script>
 </script>
 
 </body>
