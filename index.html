@@ -226,6 +226,28 @@ body.joinmode nav.tabs{display:none!important}
         <select id="cloudMaxWords"><option value="3">3 từ</option><option value="5" selected>5 từ</option><option value="10">10 từ</option></select>
         <div style="margin-top:16px"><button class="btn" onclick="cloudCreateRoom()">☁️ Mở phòng đám mây chữ</button></div>
       </div>
+      <div class="card" id="audio-panel">
+        <h2>🎵 Nhạc &amp; hiệu ứng âm thanh</h2>
+        <div class="sub">Trang đã có sẵn bộ nhạc hiệu (bắt đầu câu hỏi, tích tắc đếm ngược, hết giờ, công bố đáp án, vinh danh, tiếng vỗ tay…). Nhạc nền thì Admin tự tải file nhạc của mình lên — file lưu ngay trên máy này nên lần sau mở trang vẫn còn, phát trên máy đang chiếu.</div>
+        <label>Nhạc nền của bạn</label>
+        <div id="bgmInfo" class="sub">Chưa có nhạc nền nào.</div>
+        <div class="hostbar">
+          <label class="btn alt" style="text-align:center;cursor:pointer">⬆️ Tải nhạc nền lên<input type="file" id="bgmFile" accept="audio/*" class="hidden" onchange="bgmUpload(this)"></label>
+          <button class="btn alt" id="bgmPlayBtn" onclick="toggleBgm()">▶ Phát nhạc nền</button>
+          <button class="btn alt" onclick="bgmRemove()">🗑 Xóa nhạc nền</button>
+        </div>
+        <label>Âm lượng nhạc nền · <span id="bgmVolVal">60%</span></label>
+        <input type="range" id="bgmVol" min="0" max="100" value="60" oninput="setBgmVol(this.value)">
+        <label>Âm lượng hiệu ứng · <span id="sfxVolVal">80%</span></label>
+        <input type="range" id="sfxVol" min="0" max="100" value="80" oninput="setSfxVol(this.value)">
+        <div class="hostbar">
+          <button class="btn alt" id="sfxToggleBtn" onclick="toggleSfx()">🔔 Hiệu ứng: Bật</button>
+          <button class="btn alt" onclick="sfxJingle()">▶ Nghe thử: Bắt đầu</button>
+          <button class="btn alt" onclick="sfxReveal()">▶ Nghe thử: Công bố</button>
+          <button class="btn alt" onclick="sfxVictory()">▶ Nghe thử: Vinh danh</button>
+        </div>
+        <div class="sub">Nhạc nền tự phát khi mở phòng (ở sảnh chờ) và tự nhỏ xuống 40% khi đang chạy câu hỏi để không át tiếng MC. Trên màn hình chiếu cũng có nút bật/tắt nhạc và thanh chỉnh âm lượng nhanh.</div>
+      </div>
       <div id="admin-qpanel"></div>
     </div>
   </section>
@@ -441,12 +463,12 @@ async function hostCreateRoom() {
 }
 function hostWatch() {
   clearSubs();
-  const off = DB.on("rooms/" + host.code, room => { host.room = room; hostRender(); });
+  const off = DB.on("rooms/" + host.code, room => { host.room = room; hostRender(); if (typeof fxAfterRender === "function") fxAfterRender(room); });
   unsubs.push(off);
 }
 function joinLink(code) { return location.origin + location.pathname + "?join=" + code; }
 function stageBar() {
-  return `<div class="stage-bar"><span class="pill">📺 MÀN HÌNH CHIẾU</span><span class="sub">Phòng <b>${esc(host.code || "")}</b></span><span class="sp"></span><button class="btn small alt" onclick="go('admin')">← Về khu Admin</button><button class="btn small danger" onclick="hostReset(false)">Đóng phòng</button></div>`;
+  return `<div class="stage-bar"><span class="pill">📺 MÀN HÌNH CHIẾU</span><span class="sub">Phòng <b>${esc(host.code || "")}</b></span><span class="sp"></span><button class="btn small alt" id="stageBgmBtn" onclick="toggleBgm()">🎵 Nhạc nền</button><button class="btn small alt" id="stageSfxBtn" onclick="toggleSfx()">🔔 Hiệu ứng</button><input type="range" id="stageBgmVol" min="0" max="100" value="60" title="Âm lượng nhạc nền" style="width:90px" oninput="setBgmVol(this.value)"><button class="btn small alt" onclick="go('admin')">← Về khu Admin</button><button class="btn small danger" onclick="hostReset(false)">Đóng phòng</button></div>`;
 }
 function hostRender() {
   const box = $("host-room"), room = host.room, code = host.code;
@@ -492,7 +514,9 @@ function hostRender() {
       if (room.status !== "playing") return;
       startTimer(() => Math.max(0, (room.qStartedAt + total * 1000 - Date.now()) / 1000), r => {
         const el = $("hostTimer"); if (!el) { stopTimer(); return; }
-        el.textContent = Math.ceil(r); el.classList.toggle("low", r <= 5);
+        const sec = Math.ceil(r);
+        if (sec !== host._tickSec) { host._tickSec = sec; if (typeof sfxTick === "function") { if (sec <= 5 && sec > 0) sfxTick(); if (sec === 0) sfxTimeUp(); } }
+        el.textContent = sec; el.classList.toggle("low", r <= 5);
       });
     }, 0);
   } else if (room.status === "finished") {
@@ -587,6 +611,7 @@ function playerLeave() {
 function playerRender() {
   const box = $("player-room"), room = me.room;
   if (!room) { box.innerHTML = "<div class='card center'><h2>Phòng đã đóng rồi</h2><p class='sub'>MC đã mở ván mới rồi. Bạn quay lại vào phòng mới nhé!</p><button class='btn' onclick='playerLeave()'>← Vào phòng khác</button></div>"; return; }
+  if (room.status === "revealed" && me._fxRev !== room.qIndex && typeof sfxGood === "function") { me._fxRev = room.qIndex; const pa = ((room.players || {})[me.pid] || {}).answers; const aa = pa && pa[room.qIndex]; if (aa) (aa.correct ? sfxGood : sfxBad)(); }
   const player = (room.players || {})[me.pid] || { name: me.name, answers: {} };
   const mine = scoreOf(player);
   const myHead = `<div class="card" style="padding:14px 18px"><div class="row"><div><b>👤 ${esc(player.name)}</b> <span class="pill">Phòng ${esc(me.code)}</span></div><div class="fix sub">Điểm của bạn: <b style="color:var(--purple2);font-size:17px">${mine.total}</b> · Đúng ${mine.correct} câu</div></div></div>`;
@@ -643,6 +668,7 @@ function adminInit() {
   $("admin-panel").classList.toggle("hidden", !adminAuthed);
   if (!adminAuthed) return;
   hostInit();
+  if (typeof audioInit === "function") audioInit();
   const off = DB.on("sets", sets => { admin.sets = sets || {}; adminRender(); });
   unsubs.push(off);
 }
@@ -913,6 +939,129 @@ async function submitCloudAnswer() {
   const n = text.split(/\s+/).length;
   if (n > max) { if (msg) msg.innerHTML = "<div class='msg err'>Dài quá rồi — câu trả lời chỉ tối đa " + max + " từ thôi. Bạn rút gọn giúp mình nhé.</div>"; return; }
   await DB.set("rooms/" + me.code + "/answers/" + uid(), { text, pid: me.pid, at: Date.now() });
+}
+</script>
+
+<audio id="bgmAudio" loop preload="auto"></audio>
+
+<script>
+/* ================= NHẠC HIỆU & NHẠC NỀN ================= */
+let audioSet = { bgmVol: 60, sfxVol: 80, sfxOn: true, bgmAuto: true, bgmName: "" };
+try { Object.assign(audioSet, JSON.parse(localStorage.getItem("dovui_audio") || "{}")); } catch (e) {}
+let AC = null, bgmReady = false, bgmAutoTriedFor = null, audioLoaded = false;
+function saveAudioSet() { try { localStorage.setItem("dovui_audio", JSON.stringify(audioSet)); } catch (e) {} }
+function ac() { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); return AC; } catch (e) { return null; } }
+window.addEventListener("pointerdown", () => { ac(); }, { passive: true });
+function tone(f, delay, dur, type, vol, slide) {
+  const c = ac(); if (!c || audioSet.sfxOn === false) return;
+  try {
+    const t = c.currentTime + (delay || 0);
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+    const v = Math.max(0.0002, (vol || 0.18) * ((audioSet.sfxVol || 0) / 100));
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(v, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.05);
+  } catch (e) {}
+}
+function noiseHit(delay, dur, vol, freq) {
+  const c = ac(); if (!c || audioSet.sfxOn === false) return;
+  try {
+    const t = c.currentTime + (delay || 0);
+    const len = Math.max(1, Math.floor(c.sampleRate * dur));
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = c.createBufferSource(); src.buffer = buf;
+    const f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = freq || 1200;
+    const g = c.createGain(); g.gain.value = Math.max(0.0002, (vol || 0.12) * ((audioSet.sfxVol || 0) / 100));
+    src.connect(f); f.connect(g); g.connect(c.destination); src.start(t);
+  } catch (e) {}
+}
+function sfxPop() { tone(520, 0, 0.09, "sine", 0.16, 880); }
+function sfxTick() { tone(1050, 0, 0.05, "square", 0.05); }
+function sfxTimeUp() { tone(185, 0, 0.18, "sawtooth", 0.16); tone(185, 0.24, 0.32, "sawtooth", 0.16); }
+function sfxJingle() { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.09, 0.22, "triangle", 0.2)); tone(262, 0, 0.4, "sine", 0.1); }
+function sfxReveal() { for (let i = 0; i < 6; i++) noiseHit(i * 0.08, 0.07, 0.10, 900); [523, 659, 784].forEach(f => tone(f, 0.52, 0.35, "triangle", 0.17)); }
+function sfxVictory() { [523, 523, 523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.13, 0.26, "triangle", 0.2)); [0.85, 1.0, 1.18, 1.33, 1.55, 1.75, 2.0].forEach(d => noiseHit(d, 0.16, 0.09, 1400)); tone(1319, 0.8, 0.5, "sine", 0.12); }
+function sfxGood() { tone(784, 0, 0.12, "sine", 0.18); tone(1047, 0.1, 0.22, "sine", 0.18); }
+function sfxBad() { tone(220, 0, 0.28, "sawtooth", 0.10, 155); }
+/* ---- Nhạc nền (file Admin tự tải, lưu IndexedDB trên máy này) ---- */
+function idbOpen() { return new Promise((res, rej) => { if (!window.indexedDB) return rej(new Error("noidb")); const r = indexedDB.open("dovui-online", 1); r.onupgradeneeded = () => { try { r.result.createObjectStore("files"); } catch (e) {} }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function idbPut(k, v) { try { const db = await idbOpen(); return new Promise((res, rej) => { const tx = db.transaction("files", "readwrite"); tx.objectStore("files").put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (e) {} }
+async function idbDel(k) { try { const db = await idbOpen(); return new Promise((res, rej) => { const tx = db.transaction("files", "readwrite"); tx.objectStore("files").delete(k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (e) {} }
+async function idbGet(k) { try { const db = await idbOpen(); return new Promise((res, rej) => { const rq = db.transaction("files", "readonly").objectStore("files").get(k); rq.onsuccess = () => res(rq.result || null); rq.onerror = () => rej(rq.error); }); } catch (e) { return null; } }
+function bgmEl() { return $("bgmAudio"); }
+function setBgmSource(url, name) { const el = bgmEl(); if (!el) return; if (url) { el.src = url; bgmReady = true; } else { el.removeAttribute("src"); el.load(); bgmReady = false; } audioSet.bgmName = name || ""; saveAudioSet(); applyBgmVolume(window.host && host.room ? host.room.status : null); refreshAudioUI(); }
+async function bgmUpload(input) {
+  const f = input.files && input.files[0]; if (!f) return;
+  await idbPut("bgm", f);
+  setBgmSource(URL.createObjectURL(f), f.name);
+  const el = bgmEl(); if (el) { try { const pr = el.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} }
+  input.value = "";
+}
+async function bgmRemove() { await idbDel("bgm"); setBgmSource(null, ""); refreshAudioUI(); }
+function applyBgmVolume(status) { const el = bgmEl(); if (!el) return; const duck = status === "playing" ? 0.4 : 1; el.volume = Math.min(1, Math.max(0, (audioSet.bgmVol / 100) * duck)); }
+function toggleBgm() {
+  const el = bgmEl(); if (!el) return;
+  if (!bgmReady) { alert("Chưa có nhạc nền nào. Vào khu Admin, mục “Nhạc & hiệu ứng” để tải file nhạc lên trước nhé!"); return; }
+  if (el.paused) { try { const pr = el.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} } else el.pause();
+  setTimeout(refreshAudioUI, 60);
+}
+function setBgmVol(v) { audioSet.bgmVol = parseInt(v, 10) || 0; saveAudioSet(); applyBgmVolume(window.host && host.room ? host.room.status : null); refreshAudioUI(); }
+function setSfxVol(v) { audioSet.sfxVol = parseInt(v, 10) || 0; saveAudioSet(); refreshAudioUI(); }
+function toggleSfx() { audioSet.sfxOn = audioSet.sfxOn === false ? true : false; saveAudioSet(); refreshAudioUI(); if (audioSet.sfxOn) sfxPop(); }
+function refreshAudioUI() {
+  const el = bgmEl();
+  const info = $("bgmInfo"); if (info) info.textContent = bgmReady ? "🎵 Đang dùng: " + (audioSet.bgmName || "nhạc nền của bạn") + (el && !el.paused ? " · Đang phát" : " · Đang tắt") : "Chưa có nhạc nền nào — hãy tải 1 file nhạc (mp3) lên nhé.";
+  const pb = $("bgmPlayBtn"); if (pb) pb.textContent = el && !el.paused ? "⏸ Tạm dừng nhạc nền" : "▶ Phát nhạc nền";
+  const bv = $("bgmVol"); if (bv && document.activeElement !== bv) bv.value = audioSet.bgmVol;
+  const bvv = $("bgmVolVal"); if (bvv) bvv.textContent = audioSet.bgmVol + "%";
+  const sv = $("sfxVol"); if (sv && document.activeElement !== sv) sv.value = audioSet.sfxVol;
+  const svv = $("sfxVolVal"); if (svv) svv.textContent = audioSet.sfxVol + "%";
+  const tb = $("sfxToggleBtn"); if (tb) tb.textContent = audioSet.sfxOn === false ? "🔕 Hiệu ứng: Tắt" : "🔔 Hiệu ứng: Bật";
+  refreshStageAudioBtns();
+}
+function refreshStageAudioBtns() {
+  const el = bgmEl();
+  const b = $("stageBgmBtn"); if (b) b.textContent = el && !el.paused ? "⏸ Nhạc nền" : "🎵 Nhạc nền";
+  const s = $("stageSfxBtn"); if (s) s.textContent = audioSet.sfxOn === false ? "🔕 Hiệu ứng" : "🔔 Hiệu ứng";
+  const r = $("stageBgmVol"); if (r && document.activeElement !== r) r.value = audioSet.bgmVol;
+}
+async function audioInit() {
+  refreshAudioUI();
+  if (audioLoaded) return; audioLoaded = true;
+  const blob = await idbGet("bgm");
+  if (blob) setBgmSource(URL.createObjectURL(blob), audioSet.bgmName || blob.name || "nhạc nền của bạn");
+  refreshAudioUI();
+}
+/* ---- Kích hoạt hiệu ứng theo diễn biến phòng ---- */
+let fxPrev = { status: null, qIndex: -1, pCount: 0, aCount: 0, code: null };
+function fxAfterRender(room) {
+  if (!room) { fxPrev = { status: null, qIndex: -1, pCount: 0, aCount: 0, code: null }; applyBgmVolume(null); return; }
+  const code = window.host ? host.code : null;
+  const pCount = Object.keys(room.players || {}).length;
+  const aCount = Object.keys(room.answers || {}).length;
+  const same = fxPrev.code === code && fxPrev.code !== null;
+  if (room.type === "cloud") {
+    if (same && aCount > fxPrev.aCount) sfxPop();
+  } else {
+    if (same && room.status === "lobby" && pCount > fxPrev.pCount) sfxPop();
+    if (!same || fxPrev.status !== room.status || fxPrev.qIndex !== room.qIndex) {
+      if (room.status === "playing") sfxJingle();
+      else if (room.status === "revealed") sfxReveal();
+      else if (room.status === "finished") sfxVictory();
+    }
+  }
+  fxPrev = { status: room.status, qIndex: room.qIndex || 0, pCount, aCount, code };
+  applyBgmVolume(room.status);
+  if (room.status === "lobby" && bgmReady && audioSet.bgmAuto !== false && bgmAutoTriedFor !== code) {
+    bgmAutoTriedFor = code;
+    const el = bgmEl(); if (el && el.paused) { try { const pr = el.play(); if (pr && pr.then) pr.then(() => refreshAudioUI()).catch(() => {}); } catch (e) {} }
+  }
+  refreshStageAudioBtns();
 }
 </script>
 
