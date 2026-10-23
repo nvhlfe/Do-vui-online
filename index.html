@@ -122,6 +122,12 @@ footer{color:var(--mut);text-align:center;font-size:13px;padding:28px 10px 36px}
 select.setpick{font-size:16px}
 .hostbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .hostbar .btn{flex:1;min-width:150px}
+.vrow{display:flex;align-items:center;gap:12px;margin:11px 0}
+.vrow .vlabel{flex:0 0 32%;font-weight:700;font-size:16px}
+.vrow .vnum{flex:0 0 118px;text-align:right;font-weight:800;color:var(--purple)}
+.vopt{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:#fff;border:2.5px solid var(--line);border-radius:14px;padding:14px 16px;margin:7px 0;font-family:inherit;font-size:16px;font-weight:600;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--line)}
+.vopt.on{border-color:var(--purple);background:var(--soft);box-shadow:0 3px 0 var(--purple2)}
+.vopt:disabled{opacity:.55;cursor:default}
 .flip-x{display:inline-block;transform:scaleX(-1)}
 .wheel-wrap{position:relative;width:min(74vw,560px);margin:8px auto}
 #wheelCanvas{width:100%;height:auto;display:block}
@@ -214,7 +220,7 @@ body.joinmode nav.tabs{display:none!important}
   <section id="view-player" class="hidden">
     <div id="player-join" class="card">
       <h2>📱 Vào phòng chơi</h2>
-      <div class="sub">Nhập mã phòng đang hiện trên màn hình lớn — chỉ 5 giây là xong! Phòng trắc nghiệm thì điền thêm tên của bạn, còn phòng đám mây chữ thì khỏi cần tên luôn.</div>
+      <div class="sub">Nhập mã phòng đang hiện trên màn hình lớn — chỉ 5 giây là xong! Phòng trắc nghiệm thì điền thêm tên của bạn, còn phòng đám mây chữ và phòng bình chọn thì khỏi cần tên luôn.</div>
       <label>Mã phòng</label>
       <input type="text" id="joinCode" placeholder="VD: ABC123" style="text-transform:uppercase" maxlength="8">
       <label>Tên người chơi <span style="font-weight:400">(phòng đám mây chữ bỏ trống cũng được)</span></label>
@@ -259,6 +265,20 @@ body.joinmode nav.tabs{display:none!important}
         <label>Mỗi câu trả lời tối đa</label>
         <select id="cloudMaxWords"><option value="3">3 từ</option><option value="5" selected>5 từ</option><option value="10">10 từ</option></select>
         <div style="margin-top:16px"><button class="btn" onclick="cloudCreateRoom()">☁️ Mở phòng đám mây chữ</button></div>
+      </div>
+      <div id="vote-create" class="card">
+        <h2>🗳️ Bình chọn — Vote trực tiếp</h2>
+        <div class="sub">Admin đặt câu hỏi và các lựa chọn, mọi người quét QR vào chọn trên điện thoại — <b>không cần nhập tên</b>. Kết quả hiện trực tiếp trên màn hình chiếu theo % phiếu.</div>
+        <label>Câu hỏi bình chọn</label>
+        <input type="text" id="voteQuestion" value="Anh chị thấy buổi hôm nay thế nào?">
+        <label>Các lựa chọn (mỗi dòng 1 lựa chọn, tối đa 12)</label>
+        <textarea id="voteOptions" rows="4" placeholder="Rất hay&#10;Hay&#10;Bình thường&#10;Cần cải thiện">Rất hay
+Hay
+Bình thường
+Cần cải thiện</textarea>
+        <label>Mỗi người được chọn tối đa (nhập tay)</label>
+        <input type="number" id="voteMax" value="1" min="1" max="12" step="1">
+        <div style="margin-top:14px"><button class="btn" onclick="voteCreateRoom()">🗳️ Mở phòng bình chọn</button></div>
       </div>
       <div class="card" id="audio-panel">
         <h2>🎵 Nhạc &amp; hiệu ứng âm thanh</h2>
@@ -526,12 +546,12 @@ async function hostInit() {
     if (!pick.options.length) pick.innerHTML = "<option value=''>— Chưa có bộ câu hỏi —</option>";
   });
   unsubs.push(off);
-  const cc = $("cloud-create"), ha = $("host-active");
+  const cc = $("cloud-create"), ha = $("host-active"), vc = $("vote-create");
   if (host.code) {
-    $("host-create").classList.add("hidden"); if (cc) cc.classList.add("hidden");
+    $("host-create").classList.add("hidden"); if (cc) cc.classList.add("hidden"); if (vc) vc.classList.add("hidden");
     if (ha) { ha.classList.remove("hidden"); ha.innerHTML = `<div class="row"><div>📺 <b>Đang có phòng ${esc(host.code)}</b> ở màn hình chiếu${host.room ? " — " + esc(host.room.name || host.room.prompt || "") : ""}. Khu Admin chỉ để quản lý câu hỏi, điều khiển game ở màn hình chiếu nhé.</div><div class="fix"><button class="btn small" onclick="go('stage')">Quay lại màn hình chiếu</button> <button class="btn small danger" onclick="hostReset(false)">Đóng phòng</button></div></div>`; }
   } else {
-    $("host-create").classList.remove("hidden"); if (cc) cc.classList.remove("hidden");
+    $("host-create").classList.remove("hidden"); if (cc) cc.classList.remove("hidden"); if (vc) vc.classList.remove("hidden");
     if (ha) { ha.classList.add("hidden"); ha.innerHTML = ""; }
   }
 }
@@ -567,6 +587,7 @@ function hostRender() {
   const box = $("host-room"), room = host.room, code = host.code;
   if (!room) { box.innerHTML = stageBar() + "<div class='card center'><h2>Phòng đã đóng rồi</h2><p class='sub'>Bấm nút bên dưới để về khu Admin mở phòng mới nhé.</p><button class='btn' onclick='hostReset(true)'>← Về khu Admin</button></div>"; return; }
   if (room.type === "cloud") { cloudHostRender(room); return; }
+  if (room.type === "vote") { voteHostRender(room); return; }
   const players = room.players || {}, pCount = Object.keys(players).length;
   const top = ranked(players).slice(0, 10);
   let body = "";
@@ -667,7 +688,7 @@ function playerInit() {
   if (m && !playerInit._tried) {
     playerInit._tried = true;
     const code = m[1].toUpperCase();
-    DB.get("rooms/" + code).then(r => { if (r && r.type === "cloud" && !me.code) enterCloudPlayer(code); }).catch(() => {});
+    DB.get("rooms/" + code).then(r => { if (!r || me.code) return; if (r.type === "cloud") enterCloudPlayer(code); else if (r.type === "vote") enterVotePlayer(code); }).catch(() => {});
   }
 }
 async function playerJoin() {
@@ -678,6 +699,7 @@ async function playerJoin() {
   const room = await DB.get("rooms/" + code);
   if (!room) { msg.innerHTML = "<div class='msg err'>Chưa tìm thấy phòng <b>" + esc(code) + "</b>. Bạn kiểm tra lại mã trên màn hình lớn giúp mình nhé.</div>"; return; }
   if (room.type === "cloud") { enterCloudPlayer(code); return; }
+  if (room.type === "vote") { enterVotePlayer(code); return; }
   if (!name) { msg.innerHTML = "<div class='msg err'>Phòng trắc nghiệm cần tên của bạn để lên bảng vinh danh đó — điền tên giúp mình nhé 😊</div>"; return; }
   if (room.status === "finished") { msg.innerHTML = "<div class='msg err'>Phòng này vừa kết thúc rồi. Hẹn gặp bạn ở ván sau nhé!</div>"; return; }
   let pid = sessionStorage.getItem("dovui_pid_" + code);
@@ -1137,9 +1159,9 @@ function fxAfterRender(room) {
   if (!room) { fxPrev = { status: null, qIndex: -1, pCount: 0, aCount: 0, code: null }; applyBgmVolume(null); return; }
   const code = window.host ? host.code : null;
   const pCount = Object.keys(room.players || {}).length;
-  const aCount = Object.keys(room.answers || {}).length;
+  const aCount = Object.keys(room.answers || room.ballots || {}).length;
   const same = fxPrev.code === code && fxPrev.code !== null;
-  if (room.type === "cloud") {
+  if (room.type === "cloud" || room.type === "vote") {
     if (same && aCount > fxPrev.aCount) sfxPop();
   } else {
     if (same && room.status === "lobby" && pCount > fxPrev.pCount) sfxPop();
@@ -1641,6 +1663,134 @@ function slotSpin() {
   }
 }
 </script>
+</script>
+
+
+<script>
+/* ================= BÌNH CHỌN (VOTE) ================= */
+async function voteCreateRoom() {
+  const q = $("voteQuestion").value.trim();
+  const opts = $("voteOptions").value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  if (!q) { alert("Admin chưa nhập câu hỏi bình chọn rồi."); return; }
+  if (opts.length < 2) { alert("Cần ít nhất 2 lựa chọn mới bình chọn được. Bạn nhập thêm nhé!"); return; }
+  if (opts.length > 12) { alert("Tối đa 12 lựa chọn cho dễ nhìn trên màn hình. Hiện có " + opts.length + "."); return; }
+  let maxC = parseInt($("voteMax").value, 10) || 1;
+  maxC = Math.max(1, Math.min(opts.length, maxC));
+  let code = roomCode();
+  if (await DB.get("rooms/" + code)) code = roomCode();
+  await DB.set("rooms/" + code, { type: "vote", name: q, question: q, options: opts, maxChoices: maxC, status: "open", createdAt: Date.now(), ballots: {} });
+  host.code = code;
+  window.STAGE_MODE = "room";
+  go("stage");
+}
+function voteCounts(room) {
+  const counts = (room.options || []).map(() => 0);
+  Object.values(room.ballots || {}).forEach(sel => { (sel || []).forEach(i => { if (typeof counts[i] === "number") counts[i]++; }); });
+  return counts;
+}
+const VOTE_COLORS = ["#E21B3C", "#1368CE", "#E8930C", "#26890C", "#7B2FF7", "#FF5D8F", "#00A3C7", "#F2C230", "#5B8C5A", "#D35400", "#8E44AD", "#16A085"];
+function voteHostRender(room) {
+  const box = $("host-room"), code = host.code;
+  const counts = voteCounts(room);
+  const voters = Object.keys(room.ballots || {}).length;
+  const totalVotes = counts.reduce((a, b) => a + b, 0);
+  const maxCount = Math.max(1, ...counts);
+  const closed = room.status === "closed";
+  box.innerHTML = stageBar() + `
+    <div class="card stage-center" style="padding-top:16px">
+      <span class="pill">🗳️ BÌNH CHỌN · ${closed ? "ĐÃ ĐÓNG" : "ĐANG MỞ"} · Mỗi người chọn tối đa ${room.maxChoices} lựa chọn</span>
+      <div class="stage-title" style="font-size:clamp(28px,5vw,46px)">${esc(room.question)}</div>
+      <div class="sub" style="font-size:16px">🙋 ${voters} người đã vote · 🗳️ ${totalVotes} lượt chọn · Mã phòng <b>${code}</b></div>
+    </div>
+    <div class="card" style="text-align:left">
+      ${room.options.map((o, i) => {
+        const pct = totalVotes ? Math.round(counts[i] / totalVotes * 100) : 0;
+        return `<div class="vrow"><span class="vlabel">${esc(o)}</span><span class="bar"><i style="width:${Math.round(counts[i] / maxCount * 100)}%;background:${VOTE_COLORS[i % VOTE_COLORS.length]}"></i></span><span class="vnum">${counts[i]} phiếu · ${pct}%</span></div>`;
+      }).join("")}
+      ${!voters ? `<p class="sub center" style="margin-top:8px">Chưa có ai vote — kết quả sẽ chạy trực tiếp ở đây ngay khi có phiếu đầu tiên 🗳️</p>` : ""}
+    </div>
+    <div class="card">
+      <div class="row">
+        <div class="fix center"><img class="qr-thumb" alt="QR tham gia" title="Bấm để phóng to cho mọi người quét" onclick="qrZoom(true)" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinLink(code))}"><div class="sub">Bấm QR để phóng to</div></div>
+        <div>
+          <div class="hostbar" style="margin-top:0">
+            <button class="btn ${closed ? "" : "alt"}" onclick="voteToggleStatus()">${closed ? "▶ Mở lại bình chọn" : "⏸ Đóng bình chọn"}</button>
+            <button class="btn alt" onclick="voteClearBallots()">🧹 Xóa hết phiếu, vote lại từ đầu</button>
+          </div>
+          <div class="sub">Đóng bình chọn thì người chơi không gửi thêm phiếu được nữa nhưng kết quả vẫn hiện ở đây. Xóa hết phiếu để bắt đầu lại lượt vote mới với cùng câu hỏi.</div>
+        </div>
+      </div>
+    </div>`;
+}
+async function voteToggleStatus() {
+  if (!host.room) return;
+  await DB.update("rooms/" + host.code, { status: host.room.status === "closed" ? "open" : "closed" });
+}
+async function voteClearBallots() {
+  if (!confirm("Xóa hết phiếu đã vote trong phòng này?")) return;
+  await DB.remove("rooms/" + host.code + "/ballots");
+}
+function enterVotePlayer(code) {
+  let pid = sessionStorage.getItem("dovui_pid_" + code);
+  if (!pid) { pid = uid(); sessionStorage.setItem("dovui_pid_" + code, pid); }
+  me = { code, pid, name: null, room: null, vote: true, voteSel: null, voteEditing: false };
+  $("player-join").classList.add("hidden");
+  $("player-room").classList.remove("hidden");
+  clearSubs();
+  const off = DB.on("rooms/" + code, r => { me.room = r; votePlayerRender(); });
+  unsubs.push(off);
+}
+function votePlayerRender() {
+  const box = $("player-room"), room = me.room;
+  if (!room) { box.innerHTML = "<div class='card center'><h2>Phòng đã đóng rồi</h2><p class='sub'>Admin đã đóng phòng này. Hẹn gặp bạn ở lượt sau nhé!</p><button class='btn' onclick='playerLeave()'>← Vào phòng khác</button></div>"; return; }
+  const myBallot = (room.ballots || {})[me.pid] || null;
+  const maxC = room.maxChoices || 1;
+  const closed = room.status === "closed";
+  if (myBallot && !me.voteEditing) {
+    box.innerHTML = `
+      <div class="card center">
+        <span class="pill">🗳️ PHÒNG ${esc(me.code)}</span>
+        <div class="qtext" style="margin-top:12px">${esc(room.question)}</div>
+        <div class="msg ok">✅ Đã ghi nhận phiếu của bạn rồi!</div>
+        <div>${myBallot.map(i => `<span class="my-chip">✔ ${esc(room.options[i])}</span>`).join("")}</div>
+        ${closed ? `<p class="sub" style="margin-top:10px">Bình chọn đã đóng — cảm ơn bạn đã tham gia!</p>` : `<button class="btn alt" style="margin-top:12px" onclick="me.voteSel=null;me.voteEditing=true;votePlayerRender()">✏️ Đổi lựa chọn</button>`}
+      </div>`;
+    return;
+  }
+  if (me.voteSel === null || me.voteSel === undefined) me.voteSel = new Set(myBallot || []);
+  const sel = me.voteSel;
+  box.innerHTML = `
+    <div class="card">
+      <span class="pill">🗳️ PHÒNG ${esc(me.code)} · BÌNH CHỌN</span>
+      <div class="qtext" style="margin-top:12px">${esc(room.question)}</div>
+      <p class="sub">${closed ? "Bình chọn đã đóng rồi." : maxC > 1 ? "Bạn chọn tối đa <b>" + maxC + " lựa chọn</b> nhé — đã chọn <b>" + sel.size + "/" + maxC + "</b>." : "Bạn chọn <b>1 lựa chọn</b> thôi nhé."}</p>
+      ${room.options.map((o, i) => `<button class="vopt ${sel.has(i) ? "on" : ""}" ${closed ? "disabled" : ""} onclick="toggleVoteOpt(${i})"><span>${sel.has(i) ? "✅" : "⬜"}</span><span>${esc(o)}</span></button>`).join("")}
+      <div id="voteMsg"></div>
+      ${closed ? "" : `<button class="btn" style="width:100%;margin-top:10px" onclick="submitVote()">🗳 Gửi bình chọn</button>`}
+    </div>`;
+}
+function toggleVoteOpt(i) {
+  const room = me.room; if (!room) return;
+  const maxC = room.maxChoices || 1;
+  if (!me.voteSel) me.voteSel = new Set();
+  if (me.voteSel.has(i)) me.voteSel.delete(i);
+  else {
+    if (maxC === 1) me.voteSel = new Set([i]);
+    else if (me.voteSel.size >= maxC) {
+      votePlayerRender();
+      const m = $("voteMsg"); if (m) m.innerHTML = "<div class='msg err'>Bạn chỉ chọn tối đa " + maxC + " lựa chọn thôi — bỏ bớt một cái rồi chọn lại nhé 😊</div>";
+      return;
+    } else me.voteSel.add(i);
+  }
+  votePlayerRender();
+}
+async function submitVote() {
+  const room = me.room; if (!room) return;
+  const sel = [...(me.voteSel || [])].sort((a, b) => a - b);
+  if (!sel.length) { const m = $("voteMsg"); if (m) m.innerHTML = "<div class='msg err'>Bạn chưa chọn lựa chọn nào cả 😊</div>"; return; }
+  await DB.set("rooms/" + me.code + "/ballots/" + me.pid, sel);
+  me.voteEditing = false; me.voteSel = null;
+}
 </script>
 
 </body>
