@@ -122,6 +122,18 @@ footer{color:var(--mut);text-align:center;font-size:13px;padding:28px 10px 36px}
 select.setpick{font-size:16px}
 .hostbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .hostbar .btn{flex:1;min-width:150px}
+body.stage-mode header.top,body.stage-mode footer{display:none!important}
+body.stage-mode .wrap{max-width:1240px}
+.stage-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0 12px}
+.stage-bar .sp{flex:1}
+.stage-center{text-align:center}
+.stage-title{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;font-size:clamp(34px,6vw,58px);color:var(--purple);margin:12px 0 6px;line-height:1.12}
+.qr-hero{background:#fff;padding:14px;border-radius:24px;width:min(330px,74vw);height:auto;border:4px dashed #D9CFFF;cursor:zoom-in;box-shadow:0 18px 40px rgba(70,23,143,.16);margin-top:8px}
+.code-huge{font-size:clamp(54px,10vw,98px)}
+.btn.stage-start{font-size:21px;padding:18px 40px;margin-top:18px}
+.stage-players{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+.stage-q{font-size:clamp(28px,5.4vw,46px)}
+.qr-thumb{width:88px;height:88px;background:#fff;padding:5px;border-radius:12px;border:2px dashed #D9CFFF;cursor:zoom-in;vertical-align:middle}
 .cloud-wrap{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;justify-content:center;padding:30px 12px;min-height:230px}
 .cloud-word{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;line-height:1.05;padding:2px 4px;animation:rise .4s ease both}
 .phrase-chip{display:inline-block;background:#FFF4D6;border:1.5px solid #FFE1A1;color:#7A4A00;border-radius:999px;padding:9px 15px;font-weight:700;font-size:15px;margin:4px;animation:rise .3s ease both}
@@ -194,6 +206,7 @@ body.joinmode nav.tabs{display:none!important}
         <div><span class="pill">👋 Xin chào Admin! Bạn đang ở khu điều khiển trò chơi.</span></div>
         <div class="fix"><button class="btn small alt" onclick="adminLogout()">Đăng xuất</button></div>
       </div>
+      <div id="host-active" class="card hidden" style="background:var(--soft)"></div>
       <div id="host-create" class="card">
         <h2>🎤 Mở phòng chơi mới (màn hình MC)</h2>
         <div class="sub">Chọn một bộ câu hỏi thật hay, đặt tên phòng rồi bấm mở phòng. Mọi người quét mã QR là vào ngay!</div>
@@ -213,9 +226,13 @@ body.joinmode nav.tabs{display:none!important}
         <select id="cloudMaxWords"><option value="3">3 từ</option><option value="5" selected>5 từ</option><option value="10">10 từ</option></select>
         <div style="margin-top:16px"><button class="btn" onclick="cloudCreateRoom()">☁️ Mở phòng đám mây chữ</button></div>
       </div>
-      <div id="host-room" class="hidden"></div>
       <div id="admin-qpanel"></div>
     </div>
+  </section>
+
+  <!-- STAGE: màn hình chiếu điều khiển game, tách hẳn khỏi Admin -->
+  <section id="view-stage" class="hidden">
+    <div id="host-room"></div>
   </section>
 </div>
 <footer>ĐỐ VUI ONLINE © 2026 · Làm ra để mọi người chơi cùng nhau thật vui · Không cần cài app, không cần đăng nhập 🥰</footer>
@@ -344,9 +361,14 @@ function clearSubs() { unsubs.forEach(u => { try { u(); } catch (e) {} }); unsub
 function go(view) {
   clearSubs(); stopTimer();
   if (view === "host") view = "admin";
-  ["home", "player", "admin"].forEach(v => { $("view-" + v).classList.toggle("hidden", v !== view); const t = $("tab-" + v); if (t) t.classList.toggle("on", v === view); });
+  document.body.classList.toggle("stage-mode", view === "stage");
+  ["home", "player", "admin", "stage"].forEach(v => { $("view-" + v).classList.toggle("hidden", v !== view); const t = $("tab-" + v); if (t) t.classList.toggle("on", v === view); });
   if (view === "player") playerInit();
   if (view === "admin") adminInit();
+  if (view === "stage") {
+    if (host.code) hostWatch();
+    else $("host-room").innerHTML = "<div class='card center'><h2>Chưa có phòng nào đang chiếu</h2><p class='sub'>Về khu Admin mở một phòng chơi trước nhé.</p><button class='btn' onclick='go(\'admin\')'>← Về khu Admin</button></div>";
+  }
   window.scrollTo({ top: 0 });
 }
 function updateChrome() {
@@ -390,9 +412,14 @@ async function hostInit() {
     if (!pick.options.length) pick.innerHTML = "<option value=''>— Chưa có bộ câu hỏi —</option>";
   });
   unsubs.push(off);
-  const cc = $("cloud-create");
-  if (host.code) { $("host-create").classList.add("hidden"); if (cc) cc.classList.add("hidden"); $("host-room").classList.remove("hidden"); }
-  else { $("host-create").classList.remove("hidden"); if (cc) cc.classList.remove("hidden"); $("host-room").classList.add("hidden"); }
+  const cc = $("cloud-create"), ha = $("host-active");
+  if (host.code) {
+    $("host-create").classList.add("hidden"); if (cc) cc.classList.add("hidden");
+    if (ha) { ha.classList.remove("hidden"); ha.innerHTML = `<div class="row"><div>📺 <b>Đang có phòng ${esc(host.code)}</b> ở màn hình chiếu${host.room ? " — " + esc(host.room.name || host.room.prompt || "") : ""}. Khu Admin chỉ để quản lý câu hỏi, điều khiển game ở màn hình chiếu nhé.</div><div class="fix"><button class="btn small" onclick="go('stage')">Quay lại màn hình chiếu</button> <button class="btn small danger" onclick="hostReset(false)">Đóng phòng</button></div></div>`; }
+  } else {
+    $("host-create").classList.remove("hidden"); if (cc) cc.classList.remove("hidden");
+    if (ha) { ha.classList.add("hidden"); ha.innerHTML = ""; }
+  }
 }
 async function hostCreateRoom() {
   const setId = $("hostSetPick").value;
@@ -410,10 +437,7 @@ async function hostCreateRoom() {
   };
   await DB.set("rooms/" + code, room);
   host.code = code;
-  $("host-create").classList.add("hidden");
-  const cc2 = $("cloud-create"); if (cc2) cc2.classList.add("hidden");
-  $("host-room").classList.remove("hidden");
-  hostWatch();
+  go("stage");
 }
 function hostWatch() {
   clearSubs();
@@ -421,57 +445,49 @@ function hostWatch() {
   unsubs.push(off);
 }
 function joinLink(code) { return location.origin + location.pathname + "?join=" + code; }
+function stageBar() {
+  return `<div class="stage-bar"><span class="pill">📺 MÀN HÌNH CHIẾU</span><span class="sub">Phòng <b>${esc(host.code || "")}</b></span><span class="sp"></span><button class="btn small alt" onclick="go('admin')">← Về khu Admin</button><button class="btn small danger" onclick="hostReset(false)">Đóng phòng</button></div>`;
+}
 function hostRender() {
   const box = $("host-room"), room = host.room, code = host.code;
-  if (!room) { box.innerHTML = "<div class='card'><h2>Phòng đã đóng rồi</h2><div class='sub'>MC đã bắt đầu ván mới rồi. Bấm nút bên dưới để mở một phòng khác nhé.</div><div style='margin-top:12px'><button class='btn' onclick='hostReset(true)'>← Mở phòng mới</button></div></div>"; return; }
+  if (!room) { box.innerHTML = stageBar() + "<div class='card center'><h2>Phòng đã đóng rồi</h2><p class='sub'>Bấm nút bên dưới để về khu Admin mở phòng mới nhé.</p><button class='btn' onclick='hostReset(true)'>← Về khu Admin</button></div>"; return; }
   if (room.type === "cloud") { cloudHostRender(room); return; }
   const players = room.players || {}, pCount = Object.keys(players).length;
   const top = ranked(players).slice(0, 10);
-  const head = `
-    <div class="card">
-      <div class="row" style="align-items:flex-start">
-        <div>
-          <h2 style="margin-bottom:2px">${esc(room.name)}</h2>
-          <div class="sub">${esc(room.setName)} · ${(room.questions || []).length} câu · ${pCount} người đã tham gia</div>
-          <div style="margin-top:8px"><span class="pill">${room.status === "lobby" ? "🟢 ĐANG CHỜ MỌI NGƯỜI VÀO" : room.status === "playing" ? "▶ ĐANG CHƠI · CÂU " + (room.qIndex + 1) : room.status === "revealed" ? "✅ VỪA CÔNG BỐ ĐÁP ÁN" : "🏁 ĐÃ KẾT THÚC RỒI"}</span></div>
-        </div>
-        <div class="fix center">
-          <div class="sub">MÃ PHÒNG</div>
-          <div class="code-big" style="font-size:44px;letter-spacing:4px">${code}</div>
-          <button class="btn small alt" onclick="navigator.clipboard&&navigator.clipboard.writeText('${code}')">Chép mã</button>
-          <button class="btn small alt" onclick="navigator.clipboard&&navigator.clipboard.writeText('${joinLink(code)}')">Chép liên kết</button>
-        </div>
-        <div class="fix qrbox">
-          <img alt="QR tham gia" title="Bấm để phóng to" onclick="qrZoom(true)" src="https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=${encodeURIComponent(joinLink(code))}">
-          <div class="sub">Quét là vào chơi ngay<br>👆 Bấm vào mã QR để phóng to</div>
-        </div>
-      </div>
-      <div class="players">${Object.values(players).map(p => `<span class="player-chip">👤 ${esc(p.name)}</span>`).join("") || "<span class='sub'>Chưa có ai vào cả — MC rủ mọi người quét mã QR hoặc mở liên kết tham gia nhé 🥰</span>"}</div>
-      <div class="hostbar">
-        <button class="btn alt" onclick="hostShowTop()">🏆 Xem bảng vinh danh</button>
-        <button class="btn danger" onclick="hostReset(false)">↺ Chơi ván mới</button>
-      </div>
-      <div id="host-top"></div>
-    </div>`;
   let body = "";
   if (room.status === "lobby") {
-    body = `<div class="card center"><h2>⏳ Đang chờ mọi người vào…</h2><p class="sub">Khi mọi người đã vào đủ, MC bấm nút bên dưới để bắt đầu câu đầu tiên nhé.</p>
-      <button class="btn" ${pCount ? "" : ""} onclick="hostStartQ(0)">▶ Bắt đầu câu 1 thôi!</button></div>`;
+    body = `<div class="card stage-center">
+      <span class="pill">${esc(room.setName)} · ${(room.questions || []).length} câu hỏi</span>
+      <div class="stage-title">${esc(room.name)}</div>
+      <p class="sub" style="font-size:17px">Mọi người ơi, quét mã QR bằng điện thoại để vào chơi nhé!<br>Hoặc mở trang này trên điện thoại rồi nhập mã phòng:</p>
+      <img class="qr-hero" alt="QR tham gia" title="Bấm để phóng to" onclick="qrZoom(true)" src="https://api.qrserver.com/v1/create-qr-code/?size=420x420&data=${encodeURIComponent(joinLink(code))}">
+      <div class="code-big code-huge">${code}</div>
+      <div class="sub">👆 Bấm vào mã QR để phóng to · Đã có <b>${pCount} bạn</b> vào phòng</div>
+      <div class="stage-players">${Object.values(players).map(px => `<span class="player-chip">👤 ${esc(px.name)}</span>`).join("") || "<span class='sub'>Đang chờ những bạn đầu tiên… 🥰</span>"}</div>
+      <button class="btn stage-start" onclick="hostStartQ(0)">▶ BẮT ĐẦU CÂU 1 THÔI!</button>
+    </div>`;
   } else if (room.status === "playing" || room.status === "revealed") {
     const q = room.questions[room.qIndex];
     const total = q.time || 15;
-    const answered = Object.values(players).filter(p => p.answers && p.answers[room.qIndex]).length;
-    body = `<div class="card">
-      <div class="sub center">CÂU ${room.qIndex + 1} / ${room.questions.length} · Đã trả lời: <b>${answered}/${pCount}</b></div>
-      <div class="timer" id="hostTimer">${total}</div>
-      <div class="qtext">${esc(q.q)}</div>
-      <div class="answers">${q.a.map((t, i) => `<button class="ans ${LETTERS[i]} ${room.status === "revealed" ? (i === q.correct ? "correct" : "dim") : ""}" disabled><span class="sh">${SHAPES[i]}</span><span><b>${LETTERS[i]}.</b> ${esc(t)}</span></button>`).join("")}</div>
-      ${room.status === "playing" ? `<div class="hostbar"><button class="btn" onclick="hostReveal()">🔓 Khóa lại & công bố đáp án</button></div>` : hostStatsHtml(room, q) + `
-      <div class="hostbar">
-        ${room.qIndex + 1 < room.questions.length ? `<button class="btn" onclick="hostStartQ(${room.qIndex + 1})">Câu tiếp theo → (${room.qIndex + 2})</button>` : `<button class="btn" onclick="hostFinish()">🏁 Kết thúc & vinh danh TOP 10</button>`}
-        <button class="btn alt" onclick="hostShowTop()">🏆 Xem bảng vinh danh</button>
-      </div>`}
-    </div>`;
+    const answered = Object.values(players).filter(px => px.answers && px.answers[room.qIndex]).length;
+    const answersHtml = `<div class="answers">${q.a.map((t, i) => `<button class="ans ${LETTERS[i]} ${room.status === "revealed" ? (i === q.correct ? "correct" : "dim") : ""}" disabled><span class="sh">${SHAPES[i]}</span><span><b>${LETTERS[i]}.</b> ${esc(t)}</span></button>`).join("")}</div>`;
+    if (room.status === "playing") {
+      body = `<div class="card">
+        <div class="sub center">CÂU ${room.qIndex + 1} / ${room.questions.length} · Đã trả lời: <b>${answered}/${pCount}</b></div>
+        <div class="timer" id="hostTimer">${total}</div>
+        <div class="qtext stage-q">${esc(q.q)}</div>${answersHtml}
+        <div class="hostbar"><button class="btn" onclick="hostReveal()">🔓 Khóa lại & công bố đáp án</button></div>
+      </div>`;
+    } else {
+      body = `<div class="card">
+        <div class="sub center">ĐÁP ÁN CÂU ${room.qIndex + 1} / ${room.questions.length}</div>
+        <div class="qtext stage-q">${esc(q.q)}</div>${answersHtml}${hostStatsHtml(room, q)}
+      </div>
+      <div class="card">
+        <h3 class="center" style="margin-top:2px">🏆 Bảng xếp hạng sau câu ${room.qIndex + 1}</h3>${podiumHtml(top)}${lbHtml(top)}
+        <div class="hostbar">${room.qIndex + 1 < room.questions.length ? `<button class="btn" onclick="hostStartQ(${room.qIndex + 1})">Câu tiếp theo → (${room.qIndex + 2})</button>` : `<button class="btn" onclick="hostFinish()">🏁 Kết thúc & vinh danh TOP 10</button>`}</div>
+      </div>`;
+    }
     setTimeout(() => {
       if (room.status !== "playing") return;
       startTimer(() => Math.max(0, (room.qStartedAt + total * 1000 - Date.now()) / 1000), r => {
@@ -480,9 +496,9 @@ function hostRender() {
       });
     }, 0);
   } else if (room.status === "finished") {
-    body = `<div class="card"><h2 class="center">🏁 Hết ván rồi — chúc mừng nhà vô địch!</h2>${podiumHtml(top)}${lbHtml(top)}</div>`;
+    body = `<div class="card"><h2 class="center">🏁 Hết ván rồi — chúc mừng nhà vô địch!</h2>${podiumHtml(top)}${lbHtml(top)}<div class="hostbar"><button class="btn alt" onclick="hostReset(false)">↺ Chơi ván mới</button></div></div>`;
   }
-  box.innerHTML = head + body;
+  box.innerHTML = stageBar() + body;
 }
 function hostStatsHtml(room, q) {
   const players = Object.values(room.players || {});
@@ -518,10 +534,8 @@ function hostShowTopSoon() { setTimeout(hostShowTop, 350); }
 async function hostReset(backToCreate) {
   if (host.code) await DB.remove("rooms/" + host.code);
   host = { code: null, room: null };
-  $("host-room").classList.add("hidden"); $("host-room").innerHTML = "";
-  $("host-create").classList.remove("hidden");
-  const cc3 = $("cloud-create"); if (cc3) cc3.classList.remove("hidden");
-  if (!backToCreate) hostInit();
+  $("host-room").innerHTML = "";
+  go("admin");
 }
 </script>
 
@@ -791,10 +805,7 @@ async function cloudCreateRoom() {
   if (await DB.get("rooms/" + code)) code = roomCode();
   await DB.set("rooms/" + code, { type: "cloud", name: prompt, prompt, maxWords, status: "open", createdAt: Date.now(), answers: {} });
   host.code = code;
-  $("host-create").classList.add("hidden");
-  const cc = $("cloud-create"); if (cc) cc.classList.add("hidden");
-  $("host-room").classList.remove("hidden");
-  hostWatch();
+  go("stage");
 }
 function cloudWords(room) {
   const freq = {};
@@ -817,45 +828,36 @@ function cloudHostRender(room) {
   } else {
     const words = cloudWords(room);
     const fmax = Math.max(1, ...words.map(w => w[1]));
-    display = `<div class="cloud-wrap">${words.map(([wd, f], i) => {
+    display = `<div class="cloud-wrap">${words.map(([wd, f]) => {
       const size = Math.round(21 + (f / fmax) * 47);
       const col = CLOUD_COLORS[[...wd].reduce((s, c) => s + c.charCodeAt(0), 0) % CLOUD_COLORS.length];
       return `<span class="cloud-word" title="${f} lần" style="font-size:${size}px;color:${col}">${esc(wd)}</span>`;
     }).join("")}</div>`;
   }
-  box.innerHTML = `
-    <div class="card">
-      <div class="row" style="align-items:flex-start">
-        <div>
-          <span class="pill">☁️ PHÒNG ĐÁM MÂY CHỮ</span>
-          <h2 style="margin-top:8px">${esc(room.prompt)}</h2>
-          <div class="sub">Mỗi câu trả lời tối đa <b>${room.maxWords || 5} từ</b> · Không cần nhập tên</div>
-          <div style="margin-top:8px"><span class="pill">💬 ${answers.length} câu trả lời</span> <span class="pill">🙋 ${people} bạn đã tham gia</span></div>
-        </div>
-        <div class="fix center">
-          <div class="sub">MÃ PHÒNG</div>
-          <div class="code-big" style="font-size:44px;letter-spacing:4px">${code}</div>
-          <button class="btn small alt" onclick="navigator.clipboard&&navigator.clipboard.writeText('${code}')">Chép mã</button>
-          <button class="btn small alt" onclick="navigator.clipboard&&navigator.clipboard.writeText('${joinLink(code)}')">Chép liên kết</button>
-        </div>
-        <div class="fix qrbox">
-          <img alt="QR tham gia" title="Bấm để phóng to" onclick="qrZoom(true)" src="https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=${encodeURIComponent(joinLink(code))}">
-          <div class="sub">Quét là vào chơi ngay<br>👆 Bấm vào mã QR để phóng to</div>
-        </div>
-      </div>
-      <div class="hostbar">
-        <button class="btn ${host.cloudView === "cloud" ? "" : "alt"}" onclick="host.cloudView='cloud';hostRender()">☁️ Xem đám mây chữ</button>
-        <button class="btn ${host.cloudView === "list" ? "" : "alt"}" onclick="host.cloudView='list';hostRender()">💬 Xem từng câu trả lời</button>
-        <button class="btn alt" onclick="cloudClearAnswers()">🧹 Xóa hết câu trả lời</button>
-        <button class="btn danger" onclick="hostReset(false)">🏁 Đóng phòng này</button>
-      </div>
-      <div class="row" style="margin-top:14px">
-        <div><input type="text" id="cloudPromptInput" value="${esc(room.prompt)}" placeholder="Đổi sang câu hỏi mới…"></div>
-        <div class="fix"><button class="btn small" onclick="cloudSetPrompt()">Đổi câu hỏi</button></div>
-      </div>
-      <div class="sub">Đổi câu hỏi sẽ xóa hết câu trả lời hiện tại để bắt đầu lượt mới.</div>
+  box.innerHTML = stageBar() + `
+    <div class="card stage-center" style="padding-top:16px">
+      <span class="pill">☁️ ĐÁM MÂY CHỮ · Mỗi câu trả lời tối đa ${room.maxWords || 5} từ · Không cần nhập tên</span>
+      <div class="stage-title" style="font-size:clamp(28px,5vw,46px)">${esc(room.prompt)}</div>
+      <div class="sub" style="font-size:16px">💬 ${answers.length} câu trả lời · 🙋 ${people} bạn đã tham gia · Mã phòng <b>${code}</b></div>
     </div>
-    <div class="card">${display}</div>`;
+    <div class="card">${display}</div>
+    <div class="card">
+      <div class="row">
+        <div class="fix center"><img class="qr-thumb" alt="QR tham gia" title="Bấm để phóng to cho mọi người quét" onclick="qrZoom(true)" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinLink(code))}"><div class="sub">Bấm QR để phóng to</div></div>
+        <div>
+          <div class="hostbar" style="margin-top:0">
+            <button class="btn ${host.cloudView === "cloud" ? "" : "alt"}" onclick="host.cloudView='cloud';hostRender()">☁️ Đám mây chữ</button>
+            <button class="btn ${host.cloudView === "list" ? "" : "alt"}" onclick="host.cloudView='list';hostRender()">💬 Từng câu trả lời</button>
+            <button class="btn alt" onclick="cloudClearAnswers()">🧹 Xóa hết câu trả lời</button>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><input type="text" id="cloudPromptInput" value="${esc(room.prompt)}" placeholder="Đổi sang câu hỏi mới…"></div>
+            <div class="fix"><button class="btn small" onclick="cloudSetPrompt()">Đổi câu hỏi</button></div>
+          </div>
+          <div class="sub">Đổi câu hỏi sẽ xóa hết câu trả lời hiện tại để bắt đầu lượt mới.</div>
+        </div>
+      </div>
+    </div>`;
 }
 async function cloudSetPrompt() {
   const v = $("cloudPromptInput").value.trim();
