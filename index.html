@@ -122,6 +122,11 @@ footer{color:var(--mut);text-align:center;font-size:13px;padding:28px 10px 36px}
 select.setpick{font-size:16px}
 .hostbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .hostbar .btn{flex:1;min-width:150px}
+body.joinmode nav.tabs{display:none!important}
+.qrbox img{cursor:zoom-in}
+#qrModal{position:fixed;inset:0;background:rgba(34,8,74,.9);z-index:60;display:flex;align-items:center;justify-content:center;padding:18px}
+#qrModal .qr-card{background:#fff;border-radius:28px;padding:28px 30px;text-align:center;max-width:94vw;box-shadow:0 30px 80px rgba(0,0,0,.45);animation:rise .28s ease both}
+#qrModal img{width:min(70vmin,540px);height:auto;display:block;margin:10px auto 4px}
 </style>
 </head>
 <body>
@@ -129,9 +134,8 @@ select.setpick{font-size:16px}
   <div class="logo"><span class="ball">🥳</span>ĐỐ VUI&nbsp;<span>ONLINE</span></div>
   <nav class="tabs">
     <button id="tab-home" onclick="go('home')">Trang chủ</button>
-    <button id="tab-host" onclick="go('host')">MC / TV</button>
     <button id="tab-player" onclick="go('player')">Người chơi</button>
-    <button id="tab-admin" onclick="go('admin')">Quản trị</button>
+    <button id="tab-admin" onclick="go('admin')">Admin 🔒</button>
   </nav>
   <div class="badge" id="connBadge"><span class="dot"></span><span id="connTxt">Đang kết nối…</span></div>
 </header>
@@ -143,9 +147,10 @@ select.setpick{font-size:16px}
       <h1>Đố vui cùng nhau,<br>cười vui <em>hết nấc!</em></h1>
       <p>Rủ mọi người cùng chơi đố vui trực tiếp nè: MC mở phòng và chiếu câu hỏi lên màn hình lớn, ai cũng chỉ cần điện thoại là trả lời được ngay. Trả lời đúng và nhanh tay sẽ leo thẳng lên bảng vinh danh đó!</p>
       <div class="cta">
-        <button class="btn" onclick="go('host')">🎤 Làm MC ngay</button>
+        <button class="btn hidden" id="ctaHost" onclick="go('admin')">🎤 Làm MC ngay</button>
         <button class="btn alt" onclick="go('player')">📱 Vào chơi thôi!</button>
       </div>
+      <p class="sub" id="adminHint" style="margin-top:14px">Bạn là quản trị viên? Vào tab <b>Admin</b> đăng nhập để mở phòng và điều khiển trò chơi nhé.</p>
     </div>
     <div class="grid4">
       <div class="feat"><span class="fic" style="background:#F1E8FF">🖥️</span><h3>Màn hình MC siêu dễ</h3><p>MC điều khiển tất cả trên màn hình lớn: mở câu hỏi, bấm giờ và công bố đáp án.</p></div>
@@ -153,21 +158,6 @@ select.setpick{font-size:16px}
       <div class="feat"><span class="fic" style="background:#FFF1CC">⚡</span><h3>Phản hồi ngay tức thì</h3><p>Trả lời xong là biết đúng hay sai liền, tay càng nhanh điểm càng cao.</p></div>
       <div class="feat"><span class="fic" style="background:#E6F9E9">🧩</span><h3>Tự tạo bộ câu hỏi</h3><p>Tự soạn câu hỏi ngay trên trang, hoặc nhập cả danh sách từ Excel cho nhanh.</p></div>
     </div>
-  </section>
-
-  <!-- HOST -->
-  <section id="view-host" class="hidden">
-    <div id="host-create" class="card">
-      <h2>🎤 Mở phòng chơi mới</h2>
-      <div class="sub">Chọn một bộ câu hỏi thật hay, đặt tên phòng rồi bấm mở phòng. Mọi người quét mã QR là vào ngay!</div>
-      <label>Bộ câu hỏi</label>
-      <select id="hostSetPick" class="setpick"></select>
-      <label>Tên phòng chơi</label>
-      <input type="text" id="hostRoomName" value="Đố Vui Online">
-      <div style="margin-top:16px"><button class="btn" onclick="hostCreateRoom()">🚀 Mở phòng & rủ mọi người vào</button></div>
-      <div class="sub" style="margin-top:10px">Chưa ưng bộ câu hỏi nào? <a href="#" onclick="go('admin');return false;">Tự tạo / nhập từ Excel ở mục Quản trị →</a></div>
-    </div>
-    <div id="host-room" class="hidden"></div>
   </section>
 
   <!-- PLAYER -->
@@ -185,17 +175,34 @@ select.setpick{font-size:16px}
     <div id="player-room" class="hidden"></div>
   </section>
 
-  <!-- ADMIN -->
+  <!-- ADMIN (MC + quản lý câu hỏi, chỉ admin đăng nhập mới xem được) -->
   <section id="view-admin" class="hidden">
     <div id="admin-lock" class="card">
-      <h2>🔐 Khu vực quản trị</h2>
-      <div class="sub">Nhập mật khẩu để vào tạo và chăm sóc các bộ câu hỏi nhé.</div>
+      <h2>🔐 Khu vực Admin</h2>
+      <div class="sub">Khu vực này chỉ dành cho quản trị viên: mở phòng & điều khiển trò chơi (MC), và chăm sóc các bộ câu hỏi. Người chơi không vào được khu này đâu nhé.</div>
       <label>Mật khẩu quản trị</label>
-      <input type="password" id="adminPass" placeholder="Mật khẩu quản trị">
-      <div style="margin-top:14px"><button class="btn" onclick="adminLogin()">Vào quản trị</button></div>
+      <input type="password" id="adminPass" placeholder="Mật khẩu quản trị" onkeydown="if(event.key==='Enter')adminLogin()">
+      <div style="margin-top:14px"><button class="btn" onclick="adminLogin()">Vào khu Admin</button></div>
       <div id="adminMsg"></div>
     </div>
-    <div id="admin-panel" class="hidden"></div>
+    <div id="admin-panel" class="hidden">
+      <div class="row" style="margin-top:4px">
+        <div><span class="pill">👋 Xin chào Admin! Bạn đang ở khu điều khiển trò chơi.</span></div>
+        <div class="fix"><button class="btn small alt" onclick="adminLogout()">Đăng xuất</button></div>
+      </div>
+      <div id="host-create" class="card">
+        <h2>🎤 Mở phòng chơi mới (màn hình MC)</h2>
+        <div class="sub">Chọn một bộ câu hỏi thật hay, đặt tên phòng rồi bấm mở phòng. Mọi người quét mã QR là vào ngay!</div>
+        <label>Bộ câu hỏi</label>
+        <select id="hostSetPick" class="setpick"></select>
+        <label>Tên phòng chơi</label>
+        <input type="text" id="hostRoomName" value="Đố Vui Online">
+        <div style="margin-top:16px"><button class="btn" onclick="hostCreateRoom()">🚀 Mở phòng & rủ mọi người vào</button></div>
+        <div class="sub" style="margin-top:10px">Chưa ưng bộ câu hỏi nào? <a href="#" onclick="go('admin');setTimeout(()=>{var e=document.getElementById('admin-qpanel');if(e)e.scrollIntoView({behavior:'smooth'})},80);return false;">Tự tạo / nhập từ Excel ở phần dưới →</a></div>
+      </div>
+      <div id="host-room" class="hidden"></div>
+      <div id="admin-qpanel"></div>
+    </div>
   </section>
 </div>
 <footer>ĐỐ VUI ONLINE © 2026 · Làm ra để mọi người chơi cùng nhau thật vui · Không cần cài app, không cần đăng nhập 🥰</footer>
@@ -323,12 +330,27 @@ let unsubs = [];
 function clearSubs() { unsubs.forEach(u => { try { u(); } catch (e) {} }); unsubs = []; }
 function go(view) {
   clearSubs(); stopTimer();
-  ["home", "host", "player", "admin"].forEach(v => { $("view-" + v).classList.toggle("hidden", v !== view); const t = $("tab-" + v); if (t) t.classList.toggle("on", v === view); });
-  if (view === "host") hostInit();
+  if (view === "host") view = "admin";
+  ["home", "player", "admin"].forEach(v => { $("view-" + v).classList.toggle("hidden", v !== view); const t = $("tab-" + v); if (t) t.classList.toggle("on", v === view); });
   if (view === "player") playerInit();
   if (view === "admin") adminInit();
   window.scrollTo({ top: 0 });
 }
+function updateChrome() {
+  const cta = $("ctaHost"); if (cta) cta.classList.toggle("hidden", !adminAuthed);
+  const hint = $("adminHint"); if (hint) hint.classList.toggle("hidden", adminAuthed);
+  const tab = $("tab-admin"); if (tab) tab.textContent = adminAuthed ? "Admin" : "Admin 🔒";
+}
+function qrZoom(open) {
+  const m = $("qrModal"); if (!m) return;
+  if (open) {
+    if (!host.code) return;
+    $("qrBigImg").src = "https://api.qrserver.com/v1/create-qr-code/?size=640x640&data=" + encodeURIComponent(joinLink(host.code));
+    $("qrBigCode").textContent = host.code;
+    m.classList.remove("hidden");
+  } else m.classList.add("hidden");
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") qrZoom(false); });
 let timerInt = null;
 function stopTimer() { if (timerInt) { clearInterval(timerInt); timerInt = null; } }
 function startTimer(getRemain, onTick) {
@@ -404,8 +426,8 @@ function hostRender() {
           <button class="btn small alt" onclick="navigator.clipboard&&navigator.clipboard.writeText('${joinLink(code)}')">Chép liên kết</button>
         </div>
         <div class="fix qrbox">
-          <img alt="QR tham gia" src="https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=${encodeURIComponent(joinLink(code))}">
-          <div class="sub">Quét là vào chơi ngay</div>
+          <img alt="QR tham gia" title="Bấm để phóng to" onclick="qrZoom(true)" src="https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=${encodeURIComponent(joinLink(code))}">
+          <div class="sub">Quét là vào chơi ngay<br>👆 Bấm vào mã QR để phóng to</div>
         </div>
       </div>
       <div class="players">${Object.values(players).map(p => `<span class="player-chip">👤 ${esc(p.name)}</span>`).join("") || "<span class='sub'>Chưa có ai vào cả — MC rủ mọi người quét mã QR hoặc mở liên kết tham gia nhé 🥰</span>"}</div>
@@ -578,22 +600,29 @@ async function playerAnswer(choice) {
 let adminAuthed = sessionStorage.getItem("dovui_admin") === "1";
 let admin = { sets: {}, editingId: null };
 function adminInit() {
+  updateChrome();
   $("admin-lock").classList.toggle("hidden", adminAuthed);
   $("admin-panel").classList.toggle("hidden", !adminAuthed);
   if (!adminAuthed) return;
+  hostInit();
   const off = DB.on("sets", sets => { admin.sets = sets || {}; adminRender(); });
   unsubs.push(off);
+}
+function adminLogout() {
+  adminAuthed = false;
+  sessionStorage.removeItem("dovui_admin");
+  location.reload();
 }
 function adminLogin() {
   if ($("adminPass").value === ADMIN_PASSWORD) {
     adminAuthed = true; sessionStorage.setItem("dovui_admin", "1");
-    $("adminMsg").innerHTML = ""; adminInit();
+    $("adminMsg").innerHTML = ""; updateChrome(); adminInit();
   } else {
     $("adminMsg").innerHTML = "<div class='msg err'>Mật khẩu chưa đúng rồi — bạn thử lại nhé.</div>";
   }
 }
 function adminRender() {
-  const panel = $("admin-panel");
+  const panel = $("admin-qpanel");
   const list = Object.entries(admin.sets).map(([id, s]) => `
     <div class="card" style="padding:14px 18px"><div class="row">
       <div><b>${esc(s.name)}</b> <span class="pill">${(s.questions || []).length} câu</span></div>
@@ -709,10 +738,22 @@ function adminImport() {
 
 /* ================= KHỞI TẠO ================= */
 DB.init();
+const JOIN_MODE = /[?&]join=[A-Za-z0-9]+/.test(location.search);
+if (JOIN_MODE) document.body.classList.add("joinmode");
 seedIfEmpty().then(() => {
-  const m = location.search.match(/[?&]join=([A-Za-z0-9]+)/);
-  go(m ? "player" : "home");
+  updateChrome();
+  go(JOIN_MODE ? "player" : "home");
 });
 </script>
+<div id="qrModal" class="hidden" onclick="qrZoom(false)">
+  <div class="qr-card">
+    <div class="sub" style="font-weight:800;color:var(--purple);letter-spacing:1px">QUÉT MÃ ĐỂ VÀO CHƠI NGAY</div>
+    <img id="qrBigImg" alt="Mã QR phóng to">
+    <div class="code-big" id="qrBigCode"></div>
+    <div class="sub">Mã phòng ở trên — ai không quét được thì nhập mã này nhé</div>
+    <button class="btn" style="margin-top:14px" onclick="qrZoom(false)">Thu nhỏ lại</button>
+    <div class="sub" style="margin-top:10px">Hoặc bấm vào bất cứ đâu để đóng</div>
+  </div>
+</div>
 </body>
 </html>
