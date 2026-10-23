@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Đố Vui Online — Chơi trực tiếp cùng nhau</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#FFF8EC; --ink:#2A1650; --mut:#6F6690; --purple:#46178F; --purple2:#7B2FF7;
+  --pink:#FF5D8F; --cyan:#00B8E6; --yellow:#FFA602; --green:#26890C;
+  --a:#E21B3C; --b:#1368CE; --c:#E8930C; --d:#26890C;
+  --ok:#1F9D55; --bad:#E21B3C; --line:#E9E2FF; --soft:#F4EFFF;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(700px 420px at 8% -4%, rgba(255,93,143,.20) 0%, transparent 60%),
+    radial-gradient(760px 460px at 94% 2%, rgba(0,184,230,.18) 0%, transparent 60%),
+    radial-gradient(900px 620px at 50% 112%, rgba(255,166,2,.16) 0%, transparent 60%),
+    var(--bg);
+  background-attachment:fixed;
+  color:var(--ink); font-family:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; min-height:100vh;
+}
+h1,h2,.logo,.btn,.qtext,.code-big,.timer,.big-result,.ans,.pod .sc{font-family:"Baloo 2","Be Vietnam Pro",system-ui,sans-serif}
+a{color:var(--purple2);font-weight:700}
+.wrap{max-width:1080px;margin:0 auto;padding:16px}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-7px) rotate(4deg)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+@keyframes wiggle{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px;max-width:1080px;margin:0 auto;flex-wrap:wrap}
+.logo{font-weight:800;letter-spacing:.3px;font-size:24px;display:flex;align-items:center;gap:10px;color:var(--purple)}
+.logo .ball{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--yellow),var(--pink));display:inline-flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 6px 0 rgba(230,120,20,.45);animation:floaty 3.2s ease-in-out infinite}
+.logo span{background:linear-gradient(90deg,var(--purple2),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.badge{font-size:12px;padding:7px 13px;border:2px solid var(--line);border-radius:999px;color:var(--mut);background:#fff;font-weight:700;box-shadow:0 3px 0 var(--line)}
+.badge .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:1px}
+.badge.demo .dot{background:var(--yellow)}
+nav.tabs{display:flex;gap:8px;flex-wrap:wrap}
+nav.tabs button{background:#fff;color:var(--purple);border:2px solid var(--line);padding:10px 17px;border-radius:999px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:0 3px 0 var(--line);transition:.15s;font-family:"Be Vietnam Pro",sans-serif}
+nav.tabs button:hover{transform:translateY(-2px)}
+nav.tabs button.on{background:var(--purple);color:#fff;border-color:var(--purple);box-shadow:0 4px 0 #2C0D5E}
+.hero{text-align:center;padding:38px 10px 10px;animation:rise .5s ease both;position:relative}
+.hero::before{content:"▲  ◆  ●  ■";position:absolute;top:2px;left:50%;transform:translateX(-50%);letter-spacing:16px;font-size:15px;color:var(--pink);opacity:.5}
+.hero h1{font-size:clamp(36px,6.8vw,62px);line-height:1.08;margin:16px 0 14px;font-weight:800;color:var(--purple)}
+.hero h1 em{font-style:normal;color:var(--pink)}
+.hero p{color:var(--mut);font-size:clamp(15px,2.4vw,19px);max-width:680px;margin:0 auto 26px;line-height:1.6}
+.cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{background:var(--purple);color:#fff;border:none;padding:15px 27px;border-radius:16px;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 6px 0 #2C0D5E;transition:.13s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 0 #2C0D5E}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #2C0D5E}
+.btn.alt{background:#fff;color:var(--purple);border:2px solid var(--line);box-shadow:0 5px 0 var(--line)}
+.btn.alt:hover{box-shadow:0 7px 0 var(--line)}
+.btn.small{padding:9px 15px;font-size:14px;border-radius:12px}
+.btn.danger{background:var(--a);box-shadow:0 5px 0 #8F1226}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px;margin:30px 0}
+.feat{background:#fff;border:2px solid var(--line);border-radius:22px;padding:20px;box-shadow:0 10px 24px rgba(70,23,143,.07);transition:.16s;animation:rise .5s ease both}
+.feat:hover{transform:translateY(-4px) rotate(-.4deg)}
+.feat .fic{display:inline-flex;width:54px;height:54px;border-radius:17px;align-items:center;justify-content:center;font-size:28px;margin-bottom:11px;animation:wiggle 4s ease-in-out infinite}
+.feat h3{margin:0 0 7px;font-size:17px;color:var(--purple);font-family:"Baloo 2","Be Vietnam Pro",sans-serif}
+.feat p{margin:0;color:var(--mut);font-size:14px;line-height:1.55}
+.card{background:#fff;border:2px solid var(--line);border-radius:24px;padding:22px;margin:16px 0;box-shadow:0 14px 34px rgba(70,23,143,.09);animation:rise .45s ease both}
+.card h2{margin:0 0 6px;font-size:24px;color:var(--purple)}
+.card h3{margin:14px 0 8px;color:var(--purple)}
+.sub{color:var(--mut);font-size:14px;line-height:1.55}
+label{display:block;font-size:13px;color:var(--mut);margin:12px 0 6px;font-weight:700}
+input[type=text],input[type=password],input[type=number],select,textarea{width:100%;background:#FBFAFF;border:2px solid var(--line);color:var(--ink);border-radius:14px;padding:13px 15px;font-size:16px;outline:none;transition:.15s;font-family:"Be Vietnam Pro",sans-serif}
+input:focus,select:focus,textarea:focus{border-color:var(--purple2);box-shadow:0 0 0 4px rgba(123,47,247,.15)}
+textarea{min-height:64px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>*{flex:1}
+.row>.fix{flex:0 0 auto}
+.code-big{font-size:clamp(44px,9vw,76px);font-weight:800;letter-spacing:6px;text-align:center;color:var(--purple)}
+.qrbox{text-align:center}
+.qrbox img{background:#fff;padding:10px;border-radius:18px;width:210px;height:210px;border:3px dashed #D9CFFF}
+.pill{display:inline-block;background:var(--soft);border:1.5px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--purple);margin:2px;font-weight:600}
+.players{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.player-chip{background:#FFF4D6;border:1.5px solid #FFE1A1;padding:9px 14px;border-radius:999px;font-weight:700;font-size:14px;color:#7A4A00;animation:rise .3s ease both}
+.qtext{font-size:clamp(24px,4.8vw,38px);font-weight:800;line-height:1.25;text-align:center;margin:12px 0 4px;color:var(--ink)}
+.timer{display:block;width:fit-content;margin:4px auto;text-align:center;font-size:clamp(26px,5vw,40px);font-weight:800;color:#fff;background:var(--purple);padding:2px 28px;border-radius:999px;box-shadow:0 6px 0 #2C0D5E}
+.timer.low{background:var(--a);box-shadow:0 6px 0 #8F1226;animation:pulse .5s ease-in-out infinite}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:18px}
+@media(max-width:560px){.answers{grid-template-columns:1fr}}
+.ans{border:none;border-radius:18px;padding:19px 17px;font-size:17px;font-weight:700;color:#fff;text-align:left;cursor:pointer;display:flex;gap:11px;align-items:center;min-height:76px;line-height:1.3;transition:.14s}
+.ans:hover:not(:disabled){transform:translateY(-3px)}
+.ans:active:not(:disabled){transform:scale(.97)}
+.ans .sh{font-size:20px;flex:0 0 auto;background:rgba(255,255,255,.28);width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center}
+.ans.A{background:var(--a);box-shadow:0 6px 0 #8F1226} .ans.B{background:var(--b);box-shadow:0 6px 0 #0B4E8A} .ans.C{background:var(--c);box-shadow:0 6px 0 #9A6204} .ans.D{background:var(--d);box-shadow:0 6px 0 #175C08}
+.ans.dim{opacity:.3;filter:saturate(.35)}
+.ans.correct{outline:5px solid var(--purple);opacity:1;animation:pulse .6s ease 2}
+.ans.picked{outline:4px solid rgba(70,23,143,.55)}
+.ans:disabled{cursor:default}
+.stat-row{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px}
+.stat-row .bar{flex:1;height:15px;background:var(--soft);border-radius:99px;overflow:hidden}
+.stat-row .bar i{display:block;height:100%;border-radius:99px;transition:width .6s ease}
+.center{text-align:center}
+.big-result{font-size:clamp(30px,6vw,46px);font-weight:800;text-align:center;margin:14px 0 4px;color:var(--purple);animation:pulse .55s ease 2}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin:24px 0 6px}
+.pod{flex:0 0 29%;max-width:190px;text-align:center}
+.pod .nm{font-weight:800;font-size:15px;word-break:break-word}
+.pod .sc{color:var(--purple2);font-weight:800}
+.pod .col{border-radius:14px 14px 0 0;margin-top:8px;display:flex;align-items:flex-start;justify-content:center;padding-top:10px;font-size:27px;font-weight:900;color:#231203}
+.pod.p1 .col{height:112px;background:linear-gradient(180deg,#FFE97A,#FFA602);box-shadow:0 0 30px rgba(255,166,2,.45)}
+.pod.p2 .col{height:82px;background:linear-gradient(180deg,#F1F5F9,#B8C4D4)}
+.pod.p3 .col{height:60px;background:linear-gradient(180deg,#FFC38B,#D97B36)}
+table.lb{width:100%;border-collapse:collapse;margin-top:8px}
+table.lb td,table.lb th{padding:11px 8px;border-bottom:1.5px solid var(--line);text-align:left;font-size:15px}
+table.lb td.r,table.lb th.r{text-align:right}
+table.qedit{width:100%;border-collapse:collapse}
+table.qedit td{padding:6px 4px;border-bottom:1.5px solid var(--line);vertical-align:top}
+.msg{padding:13px 15px;border-radius:14px;margin:12px 0;font-size:14px}
+.msg.err{background:#FFF1F3;border:1.5px solid #FDA4AF;color:#881337}
+.msg.okm{background:#ECFDF3;border:1.5px solid #6EE7B7;color:#065F46}
+.hidden{display:none!important}
+footer{color:var(--mut);text-align:center;font-size:13px;padding:28px 10px 36px}
+.kbd{background:var(--soft);border:1.5px solid var(--line);border-radius:6px;padding:1px 7px;font-size:13px}
+select.setpick{font-size:16px}
+.hostbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.hostbar .btn{flex:1;min-width:150px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo"><span class="ball">🥳</span>ĐỐ VUI&nbsp;<span>ONLINE</span></div>
+  <nav class="tabs">
+    <button id="tab-home" onclick="go('home')">Trang chủ</button>
+    <button id="tab-host" onclick="go('host')">MC / TV</button>
+    <button id="tab-player" onclick="go('player')">Người chơi</button>
+    <button id="tab-admin" onclick="go('admin')">Quản trị</button>
+  </nav>
+  <div class="badge" id="connBadge"><span class="dot"></span><span id="connTxt">Đang kết nối…</span></div>
+</header>
+
+<div class="wrap">
+  <!-- HOME -->
+  <section id="view-home">
+    <div class="hero">
+      <h1>Đố vui cùng nhau,<br>cười vui <em>hết nấc!</em></h1>
+      <p>Rủ mọi người cùng chơi đố vui trực tiếp nè: MC mở phòng và chiếu câu hỏi lên màn hình lớn, ai cũng chỉ cần điện thoại là trả lời được ngay. Trả lời đúng và nhanh tay sẽ leo thẳng lên bảng vinh danh đó!</p>
+      <div class="cta">
+        <button class="btn" onclick="go('host')">🎤 Làm MC ngay</button>
+        <button class="btn alt" onclick="go('player')">📱 Vào chơi thôi!</button>
+      </div>
+    </div>
+    <div class="grid4">
+      <div class="feat"><span class="fic" style="background:#F1E8FF">🖥️</span><h3>Màn hình MC siêu dễ</h3><p>MC điều khiển tất cả trên màn hình lớn: mở câu hỏi, bấm giờ và công bố đáp án.</p></div>
+      <div class="feat"><span class="fic" style="background:#E0F5FF">📱</span><h3>Chơi bằng điện thoại</h3><p>Quét mã QR là vào chơi ngay, chẳng cần cài app, cũng chẳng cần đăng nhập.</p></div>
+      <div class="feat"><span class="fic" style="background:#FFF1CC">⚡</span><h3>Phản hồi ngay tức thì</h3><p>Trả lời xong là biết đúng hay sai liền, tay càng nhanh điểm càng cao.</p></div>
+      <div class="feat"><span class="fic" style="background:#E6F9E9">🧩</span><h3>Tự tạo bộ câu hỏi</h3><p>Tự soạn câu hỏi ngay trên trang, hoặc nhập cả danh sách từ Excel cho nhanh.</p></div>
+    </div>
+  </section>
+
+  <!-- HOST -->
+  <section id="view-host" class="hidden">
+    <div id="host-create" class="card">
+      <h2>🎤 Mở phòng chơi mới</h2>
+      <div class="sub">Chọn một bộ câu hỏi thật hay, đặt tên phòng rồi bấm mở phòng. Mọi người quét mã QR là vào ngay!</div>
+      <label>Bộ câu hỏi</label>
+      <select id="hostSetPick" class="setpick"></select>
+      <label>Tên phòng chơi</label>
+      <input type="text" id="hostRoomName" value="Đố Vui Online">
+      <div style="margin-top:16px"><button class="btn" onclick="hostCreateRoom()">🚀 Mở phòng & rủ mọi người vào</button></div>
+      <div class="sub" style="margin-top:10px">Chưa ưng bộ câu hỏi nào? <a href="#" onclick="go('admin');return false;">Tự tạo / nhập từ Excel ở mục Quản trị →</a></div>
+    </div>
+    <div id="host-room" class="hidden"></div>
+  </section>
+
+  <!-- PLAYER -->
+  <section id="view-player" class="hidden">
+    <div id="player-join" class="card">
+      <h2>📱 Vào phòng chơi</h2>
+      <div class="sub">Nhập mã phòng đang hiện trên màn hình lớn và tên của bạn — chỉ 5 giây là xong!</div>
+      <label>Mã phòng</label>
+      <input type="text" id="joinCode" placeholder="VD: ABC123" style="text-transform:uppercase" maxlength="8">
+      <label>Tên người chơi</label>
+      <input type="text" id="joinName" placeholder="VD: Minh Anh" maxlength="30">
+      <div style="margin-top:16px"><button class="btn" onclick="playerJoin()">Vào chơi ngay →</button></div>
+      <div id="joinMsg"></div>
+    </div>
+    <div id="player-room" class="hidden"></div>
+  </section>
+
+  <!-- ADMIN -->
+  <section id="view-admin" class="hidden">
+    <div id="admin-lock" class="card">
+      <h2>🔐 Khu vực quản trị</h2>
+      <div class="sub">Nhập mật khẩu để vào tạo và chăm sóc các bộ câu hỏi nhé.</div>
+      <label>Mật khẩu quản trị</label>
+      <input type="password" id="adminPass" placeholder="Mật khẩu quản trị">
+      <div style="margin-top:14px"><button class="btn" onclick="adminLogin()">Vào quản trị</button></div>
+      <div id="adminMsg"></div>
+    </div>
+    <div id="admin-panel" class="hidden"></div>
+  </section>
+</div>
+<footer>ĐỐ VUI ONLINE © 2026 · Làm ra để mọi người chơi cùng nhau thật vui · Không cần cài app, không cần đăng nhập 🥰</footer>
+
+<script>
+/* ============================================================
+   ⚙️ CẤU HÌNH — CHỈ CẦN SỬA 2 CHỖ NÀY TRƯỚC KHI DEPLOY
+   1) FIREBASE_CONFIG: dán firebaseConfig của project Firebase
+      (Firebase Console → Project settings → Your apps → Web app).
+      Để trống apiKey thì trang chạy CHẾ ĐỘ DEMO TRÊN 1 MÁY
+      (đồng bộ giữa các tab cùng 1 trình duyệt để test thử).
+      Khi đã điền config + deploy lên Vercel: chơi thật qua
+      nhiều điện thoại, đồng bộ realtime như trang mẫu.
+   2) ADMIN_PASSWORD: mật khẩu vào trang Quản trị câu hỏi.
+   ============================================================ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyC4sX_HStoI-08tnziNJUtZeBEj_eAHgVE",
+  authDomain: "do-vui-online.firebaseapp.com",
+  databaseURL: "https://do-vui-online-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "do-vui-online",
+  storageBucket: "do-vui-online.firebasestorage.app",
+  messagingSenderId: "75039488986",
+  appId: "1:75039488986:web:5b87de46f8232dc2fb5ee3"
+};;
+const ADMIN_PASSWORD = "admin@2026";
+const DB_ROOT = "dovui"; // path riêng trên Realtime Database của project do-vui-online
+
+/* ---------- Lớp dữ liệu: Firebase RTDB hoặc Local demo ---------- */
+const DB = {
+  mode: "local", fb: null,
+  localKey: "dovui_online_local_v1", bc: null, listeners: [],
+  init() {
+    if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL && window.firebase) {
+      try {
+        firebase.initializeApp(FIREBASE_CONFIG);
+        this.fb = firebase.database();
+        this.mode = "firebase";
+      } catch (e) { console.warn("Firebase init lỗi, dùng local demo:", e); }
+    }
+    if (this.mode === "local") {
+      try { this.bc = new BroadcastChannel("dovui_online_bc"); } catch (e) {}
+      if (this.bc) this.bc.onmessage = () => this._fireAll();
+      window.addEventListener("storage", (e) => { if (e.key === this.localKey) this._fireAll(); });
+    }
+    const b = document.getElementById("connBadge"), t = document.getElementById("connTxt");
+    if (this.mode === "firebase") { t.textContent = "REALTIME · FIREBASE"; }
+    else { b.classList.add("demo"); t.textContent = "DEMO 1 MÁY · CHƯA KẾT NỐI FIREBASE"; }
+  },
+  _localAll() { try { return JSON.parse(localStorage.getItem(this.localKey)) || {}; } catch (e) { return {}; } },
+  _localSave(all) { localStorage.setItem(this.localKey, JSON.stringify(all)); if (this.bc) this.bc.postMessage({ t: "change" }); this._fireAll(); },
+  _getPath(obj, path) { return path.split("/").filter(Boolean).reduce((o, k) => (o == null ? o : o[k]), obj); },
+  _setPath(obj, path, val) { const ks = path.split("/").filter(Boolean); let o = obj; ks.slice(0, -1).forEach(k => { if (o[k] == null || typeof o[k] !== "object") o[k] = {}; o = o[k]; }); if (val === null) delete o[ks[ks.length - 1]]; else o[ks[ks.length - 1]] = val; },
+  _fireAll() { const all = this._localAll(); this.listeners.slice().forEach(L => { try { L.cb(this._getPath(all, L.path) ?? null); } catch (e) {} }); },
+  on(path, cb) {
+    if (this.mode === "firebase") { const ref = this.fb.ref(DB_ROOT + "/" + path); ref.on("value", s => cb(s.val())); return () => ref.off(); }
+    const L = { path, cb }; this.listeners.push(L); cb(this._getPath(this._localAll(), path) ?? null);
+    return () => { this.listeners = this.listeners.filter(x => x !== L); };
+  },
+  async get(path) {
+    if (this.mode === "firebase") { const s = await this.fb.ref(DB_ROOT + "/" + path).once("value"); return s.val(); }
+    return this._getPath(this._localAll(), path) ?? null;
+  },
+  set(path, val) {
+    if (this.mode === "firebase") return this.fb.ref(DB_ROOT + "/" + path).set(val);
+    const all = this._localAll(); this._setPath(all, path, val); this._localSave(all); return Promise.resolve();
+  },
+  update(path, obj) {
+    if (this.mode === "firebase") return this.fb.ref(DB_ROOT + "/" + path).update(obj);
+    const all = this._localAll(); const cur = this._getPath(all, path) || {}; this._setPath(all, path, Object.assign({}, cur, obj)); this._localSave(all); return Promise.resolve();
+  },
+  remove(path) { return this.set(path, null); },
+  now() { return this.mode === "firebase" ? firebase.database.ServerValue.TIMESTAMP : Date.now(); }
+};
+
+/* ---------- Bộ câu hỏi mẫu (seed khi chưa có dữ liệu) ---------- */
+const SEED_SETS = [
+  { name: "Bộ mẫu — Kiến thức chung", questions: [
+    { q: "Thủ đô của Việt Nam là thành phố nào?", a: ["Đà Nẵng", "Hà Nội", "Huế", "Cần Thơ"], correct: 1, time: 15 },
+    { q: "Một tuần có bao nhiêu ngày?", a: ["5 ngày", "6 ngày", "7 ngày", "8 ngày"], correct: 2, time: 10 },
+    { q: "Hành tinh nào gần Mặt Trời nhất?", a: ["Sao Kim", "Sao Thủy", "Trái Đất", "Sao Hỏa"], correct: 1, time: 15 },
+    { q: "15 + 27 bằng bao nhiêu?", a: ["38", "40", "42", "45"], correct: 2, time: 15 },
+    { q: "Tác giả của Truyện Kiều là ai?", a: ["Nguyễn Trãi", "Hồ Xuân Hương", "Nguyễn Du", "Nguyễn Đình Chiểu"], correct: 2, time: 15 },
+    { q: "Tỉnh nào có diện tích lớn nhất Việt Nam?", a: ["Nghệ An", "Gia Lai", "Sơn La", "Đắk Lắk"], correct: 0, time: 15 },
+    { q: "Nước chiếm khoảng bao nhiêu phần trăm bề mặt Trái Đất?", a: ["51%", "61%", "71%", "81%"], correct: 2, time: 15 },
+    { q: "Ngôn ngữ chính của Brazil là gì?", a: ["Tiếng Tây Ban Nha", "Tiếng Anh", "Tiếng Pháp", "Tiếng Bồ Đào Nha"], correct: 3, time: 15 },
+    { q: "1 giờ có bao nhiêu giây?", a: ["600 giây", "3.600 giây", "6.000 giây", "60.000 giây"], correct: 1, time: 15 },
+    { q: "Con sông nào dài nhất thế giới?", a: ["Sông Amazon", "Sông Dương Tử", "Sông Nile", "Sông Mississippi"], correct: 2, time: 15 }
+  ]},
+  { name: "Bảo hiểm & Tài chính cơ bản", questions: [
+    { q: "Bảo hiểm nhân thọ chủ yếu giúp khách hàng điều gì?", a: ["Đầu tư sinh lời chắc chắn", "Bảo vệ tài chính trước rủi ro bất ngờ", "Thay thế hoàn toàn lương hưu", "Miễn mọi loại thuế"], correct: 1, time: 15 },
+    { q: "FYP là viết tắt của khái niệm nào?", a: ["Phí bảo hiểm năm đầu tiên", "Phí dịch vụ hằng năm", "Quỹ dự phòng tài chính", "Phí quản lý hợp đồng"], correct: 0, time: 15 },
+    { q: "Bước đầu tiên quan trọng nhất khi tư vấn là gì?", a: ["Giới thiệu sản phẩm ngay", "Chốt hợp đồng nhanh", "Tìm hiểu nhu cầu và hoàn cảnh khách hàng", "Báo giá rẻ nhất"], correct: 2, time: 15 },
+    { q: "Quỹ dự phòng khẩn cấp lý tưởng tương đương bao nhiêu tháng chi tiêu?", a: ["Dưới 1 tháng", "1–2 tháng", "3–6 tháng", "Trên 24 tháng"], correct: 2, time: 15 },
+    { q: "Lãi kép được hiểu đúng là gì?", a: ["Lãi chỉ tính trên gốc", "Lãi sinh thêm lãi theo thời gian", "Lãi suất cố định mãi mãi", "Phí phạt trả chậm"], correct: 1, time: 15 },
+    { q: "Điều khoản loại trừ trong hợp đồng bảo hiểm là gì?", a: ["Các quyền lợi cộng thêm", "Các trường hợp công ty không chi trả", "Thời hạn đóng phí", "Danh sách người thụ hưởng"], correct: 1, time: 15 },
+    { q: "MDRT là danh hiệu dành cho ai?", a: ["Giám đốc chi nhánh xuất sắc", "Tư vấn viên tài chính đạt chuẩn quốc tế", "Khách hàng mua gói lớn nhất", "Đại lý mới xuất sắc nhất tháng"], correct: 1, time: 15 },
+    { q: "Thời gian cân nhắc (xem lại hợp đồng) phổ biến tại Việt Nam là bao lâu?", a: ["7 ngày", "14 ngày", "21 ngày", "45 ngày"], correct: 2, time: 15 },
+    { q: "APE trong bảo hiểm nhân thọ nghĩa là gì?", a: ["Phí bảo hiểm quy năm của hợp đồng mới", "Tổng tài sản của đại lý", "Hoa hồng năm đầu", "Phí phạt hủy hợp đồng"], correct: 0, time: 15 },
+    { q: "Một tư vấn viên chuyên nghiệp cần ưu tiên điều gì?", a: ["Bán gói phí cao nhất", "Hiểu sản phẩm, tư vấn trung thực theo nhu cầu", "Chốt thật nhanh trước khi khách đổi ý", "Chỉ bán cho người quen"], correct: 1, time: 15 }
+  ]}
+];
+async function seedIfEmpty() {
+  const sets = await DB.get("sets");
+  if (sets && Object.keys(sets).length) return;
+  for (const s of SEED_SETS) await DB.set("sets/" + uid(), Object.assign({ createdAt: Date.now() }, s));
+}
+
+/* ---------- Tiện ích ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function uid() { return Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3); }
+function roomCode() { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let c = ""; for (let i = 0; i < 6; i++) c += A[Math.floor(Math.random() * A.length)]; return c; }
+const SHAPES = ["▲", "◆", "●", "■"], LETTERS = ["A", "B", "C", "D"];
+function scoreOf(player) {
+  const ans = (player && player.answers) || {};
+  let total = 0, correct = 0;
+  Object.values(ans).forEach(x => { total += x.points || 0; if (x.correct) correct++; });
+  return { total, correct };
+}
+function ranked(playersObj) {
+  return Object.entries(playersObj || {}).map(([pid, p]) => { const s = scoreOf(p); return { pid, name: p.name, total: s.total, correct: s.correct }; })
+    .sort((x, y) => y.total - x.total || y.correct - x.correct || x.name.localeCompare(y.name));
+}
+let unsubs = [];
+function clearSubs() { unsubs.forEach(u => { try { u(); } catch (e) {} }); unsubs = []; }
+function go(view) {
+  clearSubs(); stopTimer();
+  ["home", "host", "player", "admin"].forEach(v => { $("view-" + v).classList.toggle("hidden", v !== view); const t = $("tab-" + v); if (t) t.classList.toggle("on", v === view); });
+  if (view === "host") hostInit();
+  if (view === "player") playerInit();
+  if (view === "admin") adminInit();
+  window.scrollTo({ top: 0 });
+}
+let timerInt = null;
+function stopTimer() { if (timerInt) { clearInterval(timerInt); timerInt = null; } }
+function startTimer(getRemain, onTick) {
+  stopTimer();
+  const tick = () => { const r = getRemain(); onTick(r); if (r <= 0) stopTimer(); };
+  tick(); timerInt = setInterval(tick, 200);
+}
+</script>
+
+<script>
+/* ================= MC / HOST ================= */
+let host = { code: null, room: null };
+async function hostInit() {
+  const pick = $("hostSetPick");
+  const off = DB.on("sets", sets => {
+    const cur = pick.value;
+    pick.innerHTML = "";
+    Object.entries(sets || {}).forEach(([id, s]) => {
+      const o = document.createElement("option"); o.value = id;
+      o.textContent = s.name + " · " + (s.questions || []).length + " câu";
+      pick.appendChild(o);
+    });
+    if (cur) pick.value = cur;
+    if (!pick.options.length) pick.innerHTML = "<option value=''>— Chưa có bộ câu hỏi —</option>";
+  });
+  unsubs.push(off);
+  if (host.code) { $("host-create").classList.add("hidden"); $("host-room").classList.remove("hidden"); }
+  else { $("host-create").classList.remove("hidden"); $("host-room").classList.add("hidden"); }
+}
+async function hostCreateRoom() {
+  const setId = $("hostSetPick").value;
+  if (!setId) { alert("Chưa có bộ câu hỏi nào cả. Bạn vào mục Quản trị tạo một bộ trước nhé!"); return; }
+  const set = await DB.get("sets/" + setId);
+  if (!set || !(set.questions || []).length) { alert("Bộ câu hỏi này đang trống trơn. Bạn thêm câu hỏi vào trước nhé!"); return; }
+  let code = roomCode();
+  if (await DB.get("rooms/" + code)) code = roomCode();
+  const room = {
+    name: $("hostRoomName").value.trim() || "Đố Vui Online",
+    setId, setName: set.name,
+    questions: set.questions,
+    status: "lobby", qIndex: 0, qStartedAt: 0,
+    createdAt: Date.now(), players: {}
+  };
+  await DB.set("rooms/" + code, room);
+  host.code = code;
+  $("host-create").classList.add("hidden");
+  $("host-room").classList.remove("hidden");
+  hostWatch();
+}
+function hostWatch() {
+  clearSubs();
+  const off = DB.on("rooms/" + host.code, room => { host.room = room; hostRender(); });
+  unsubs.push(off);
+}
+function joinLink(code) { return location.origin + location.pathname + "?join=" + code; }
+function hostRender() {
+  const box = $("host-room"), room = host.room, code = host.code;
+  if (!room) { box.innerHTML = "<div class='card'><h2>Phòng đã đóng rồi</h2><div class='sub'>MC đã bắt đầu ván mới rồi. Bấm nút bên dưới để mở một phòng khác nhé.</div><div style='margin-top:12px'><button class='btn' onclick='hostReset(true)'>← Mở phòng mới</button></div></div>"; return; }
+  const players = room.players || {}, pCount = Object.keys(players).length;
+  const top = ranked(players).slice(0, 10);
+  const head = `
+    <div class="card">
+      <div class="row" style="align-items:flex-start">
+        <div>
+          <h2 style="margin-bottom:2px">${esc(room.name)}</h2>
+          <div class="sub">${esc(room.setName)} · ${(room.questions || []).length} câu · ${pCount} người đã tham gia</div>
+          <div style="margin-top:8px"><span class="pill">${room.status === "lobby" ? "🟢 ĐANG CHỜ MỌI NGƯỜI VÀO" : room.status === "playing" ? "▶ ĐANG CHƠI · CÂU " + (room.qIndex + 1) : room.status === "revealed" ? "✅ VỪA CÔNG BỐ ĐÁP ÁN" : "🏁 ĐÃ KẾT THÚC RỒI"}</span></div>
+        </div>
+        <div class="fix center">
+          <div class="sub">MÃ PHÒNG</div>
+          <div class="code-big" style="font-size:44px;letter-spacing:4px">${code}</div>
+          <button class="btn small alt" onclick="navigator.clipboard&&navigator.clipboard.writeText('${code}')">Chép mã</button>
+          <button class="btn small alt" onclick="navigator.clipboard&&navigator.clipboard.writeText('${joinLink(code)}')">Chép liên kết</button>
+        </div>
+        <div class="fix qrbox">
+          <img alt="QR tham gia" src="https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=${encodeURIComponent(joinLink(code))}">
+          <div class="sub">Quét là vào chơi ngay</div>
+        </div>
+      </div>
+      <div class="players">${Object.values(players).map(p => `<span class="player-chip">👤 ${esc(p.name)}</span>`).join("") || "<span class='sub'>Chưa có ai vào cả — MC rủ mọi người quét mã QR hoặc mở liên kết tham gia nhé 🥰</span>"}</div>
+      <div class="hostbar">
+        <button class="btn alt" onclick="hostShowTop()">🏆 Xem bảng vinh danh</button>
+        <button class="btn danger" onclick="hostReset(false)">↺ Chơi ván mới</button>
+      </div>
+      <div id="host-top"></div>
+    </div>`;
+  let body = "";
+  if (room.status === "lobby") {
+    body = `<div class="card center"><h2>⏳ Đang chờ mọi người vào…</h2><p class="sub">Khi mọi người đã vào đủ, MC bấm nút bên dưới để bắt đầu câu đầu tiên nhé.</p>
+      <button class="btn" ${pCount ? "" : ""} onclick="hostStartQ(0)">▶ Bắt đầu câu 1 thôi!</button></div>`;
+  } else if (room.status === "playing" || room.status === "revealed") {
+    const q = room.questions[room.qIndex];
+    const total = q.time || 15;
+    const answered = Object.values(players).filter(p => p.answers && p.answers[room.qIndex]).length;
+    body = `<div class="card">
+      <div class="sub center">CÂU ${room.qIndex + 1} / ${room.questions.length} · Đã trả lời: <b>${answered}/${pCount}</b></div>
+      <div class="timer" id="hostTimer">${total}</div>
+      <div class="qtext">${esc(q.q)}</div>
+      <div class="answers">${q.a.map((t, i) => `<button class="ans ${LETTERS[i]} ${room.status === "revealed" ? (i === q.correct ? "correct" : "dim") : ""}" disabled><span class="sh">${SHAPES[i]}</span><span><b>${LETTERS[i]}.</b> ${esc(t)}</span></button>`).join("")}</div>
+      ${room.status === "playing" ? `<div class="hostbar"><button class="btn" onclick="hostReveal()">🔓 Khóa lại & công bố đáp án</button></div>` : hostStatsHtml(room, q) + `
+      <div class="hostbar">
+        ${room.qIndex + 1 < room.questions.length ? `<button class="btn" onclick="hostStartQ(${room.qIndex + 1})">Câu tiếp theo → (${room.qIndex + 2})</button>` : `<button class="btn" onclick="hostFinish()">🏁 Kết thúc & vinh danh TOP 10</button>`}
+        <button class="btn alt" onclick="hostShowTop()">🏆 Xem bảng vinh danh</button>
+      </div>`}
+    </div>`;
+    setTimeout(() => {
+      if (room.status !== "playing") return;
+      startTimer(() => Math.max(0, (room.qStartedAt + total * 1000 - Date.now()) / 1000), r => {
+        const el = $("hostTimer"); if (!el) { stopTimer(); return; }
+        el.textContent = Math.ceil(r); el.classList.toggle("low", r <= 5);
+      });
+    }, 0);
+  } else if (room.status === "finished") {
+    body = `<div class="card"><h2 class="center">🏁 Hết ván rồi — chúc mừng nhà vô địch!</h2>${podiumHtml(top)}${lbHtml(top)}</div>`;
+  }
+  box.innerHTML = head + body;
+}
+function hostStatsHtml(room, q) {
+  const players = Object.values(room.players || {});
+  const counts = [0, 0, 0, 0];
+  players.forEach(p => { const a = p.answers && p.answers[room.qIndex]; if (a) counts[a.choice]++; });
+  const max = Math.max(1, ...counts);
+  return `<h3>📊 Mọi người trả lời thế nào?</h3>` + q.a.map((t, i) => `
+    <div class="stat-row"><span style="width:120px;flex:0 0 120px"><b>${LETTERS[i]}.</b> ${esc(t)} ${i === q.correct ? "✅" : ""}</span>
+    <span class="bar"><i style="width:${Math.round(counts[i] / max * 100)}%;background:${["var(--a)", "var(--b)", "var(--c)", "var(--d)"][i]}"></i></span><b>${counts[i]}</b></div>`).join("");
+}
+function podiumHtml(top) {
+  const slot = (p, cls, medal) => p ? `<div class="pod ${cls}"><div class="nm">${esc(p.name)}</div><div class="sc">${p.total} điểm</div><div class="col">${medal}</div></div>`
+    : `<div class="pod ${cls}"><div class="nm" style="color:var(--mut)">Đang chờ…</div><div class="sc">—</div><div class="col">${medal}</div></div>`;
+  return `<div class="podium">${slot(top[1], "p2", "2")}${slot(top[0], "p1", "1")}${slot(top[2], "p3", "3")}</div>`;
+}
+function lbHtml(top) {
+  if (!top.length) return "<p class='sub center'>Chưa có ai vào phòng cả.</p>";
+  return `<table class="lb"><tr><th>#</th><th>Người chơi</th><th class="r">Câu đúng</th><th class="r">Điểm</th></tr>` +
+    top.map((p, i) => `<tr><td>${String(i + 1).padStart(2, "0")}</td><td><b>${esc(p.name)}</b></td><td class="r">${p.correct}</td><td class="r"><b>${p.total}</b></td></tr>`).join("") + `</table>`;
+}
+function hostShowTop() {
+  const el = $("host-top"); if (!el || !host.room) return;
+  const top = ranked(host.room.players || {}).slice(0, 10);
+  el.innerHTML = `<div style="margin-top:16px"><h3>🏆 Bảng vinh danh TOP 10</h3>${podiumHtml(top)}${lbHtml(top)}</div>`;
+  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+async function hostStartQ(idx) {
+  await DB.update("rooms/" + host.code, { status: "playing", qIndex: idx, qStartedAt: DB.now() });
+}
+async function hostReveal() { await DB.update("rooms/" + host.code, { status: "revealed" }); }
+async function hostFinish() { await DB.update("rooms/" + host.code, { status: "finished" }); hostShowTopSoon(); }
+function hostShowTopSoon() { setTimeout(hostShowTop, 350); }
+async function hostReset(backToCreate) {
+  if (host.code) await DB.remove("rooms/" + host.code);
+  host = { code: null, room: null };
+  $("host-room").classList.add("hidden"); $("host-room").innerHTML = "";
+  $("host-create").classList.remove("hidden");
+  if (!backToCreate) hostInit();
+}
+</script>
+
+<script>
+/* ================= NGƯỜI CHƠI ================= */
+let me = { code: null, pid: null, name: null, room: null };
+function playerInit() {
+  const m = location.search.match(/[?&]join=([A-Za-z0-9]+)/);
+  if (m && !$("joinCode").value) $("joinCode").value = m[1].toUpperCase();
+  if (me.code) { $("player-join").classList.add("hidden"); $("player-room").classList.remove("hidden"); }
+  else { $("player-join").classList.remove("hidden"); $("player-room").classList.add("hidden"); }
+}
+async function playerJoin() {
+  const code = $("joinCode").value.trim().toUpperCase();
+  const name = $("joinName").value.trim();
+  const msg = $("joinMsg");
+  if (!code || !name) { msg.innerHTML = "<div class='msg err'>Bạn điền thiếu rồi — cần cả mã phòng và tên của bạn nhé 😊</div>"; return; }
+  const room = await DB.get("rooms/" + code);
+  if (!room) { msg.innerHTML = "<div class='msg err'>Chưa tìm thấy phòng <b>" + esc(code) + "</b>. Bạn kiểm tra lại mã trên màn hình lớn giúp mình nhé.</div>"; return; }
+  if (room.status === "finished") { msg.innerHTML = "<div class='msg err'>Phòng này vừa kết thúc rồi. Hẹn gặp bạn ở ván sau nhé!</div>"; return; }
+  let pid = sessionStorage.getItem("dovui_pid_" + code);
+  if (!pid || !(room.players && room.players[pid])) {
+    pid = uid();
+    await DB.set("rooms/" + code + "/players/" + pid, { name, joinedAt: Date.now(), answers: {} });
+    sessionStorage.setItem("dovui_pid_" + code, pid);
+  } else {
+    await DB.update("rooms/" + code + "/players/" + pid, { name });
+  }
+  me = { code, pid, name, room: null };
+  $("player-join").classList.add("hidden");
+  $("player-room").classList.remove("hidden");
+  clearSubs();
+  const off = DB.on("rooms/" + code, r => { me.room = r; playerRender(); });
+  unsubs.push(off);
+}
+function playerLeave() {
+  me = { code: null, pid: null, name: null, room: null };
+  $("player-room").classList.add("hidden"); $("player-room").innerHTML = "";
+  $("player-join").classList.remove("hidden");
+  playerInit();
+}
+function playerRender() {
+  const box = $("player-room"), room = me.room;
+  if (!room) { box.innerHTML = "<div class='card center'><h2>Phòng đã đóng rồi</h2><p class='sub'>MC đã mở ván mới rồi. Bạn quay lại vào phòng mới nhé!</p><button class='btn' onclick='playerLeave()'>← Vào phòng khác</button></div>"; return; }
+  const player = (room.players || {})[me.pid] || { name: me.name, answers: {} };
+  const mine = scoreOf(player);
+  const myHead = `<div class="card" style="padding:14px 18px"><div class="row"><div><b>👤 ${esc(player.name)}</b> <span class="pill">Phòng ${esc(me.code)}</span></div><div class="fix sub">Điểm của bạn: <b style="color:var(--purple2);font-size:17px">${mine.total}</b> · Đúng ${mine.correct} câu</div></div></div>`;
+  let body = "";
+  if (room.status === "lobby") {
+    body = `<div class="card center"><div class="big-result">🎉 Bạn đã vào phòng rồi!</div><p class="sub">Ngồi thoải mái nhé, MC sắp bắt đầu rồi. Cứ để nguyên màn hình này, câu hỏi sẽ tự bật lên!</p><p><span class="pill">${esc(room.name)}</span> <span class="pill">${(room.questions || []).length} câu</span> <span class="pill">${Object.keys(room.players || {}).length} người chơi</span></p></div>`;
+  } else if (room.status === "playing") {
+    const q = room.questions[room.qIndex], total = q.time || 15;
+    const myAns = player.answers && player.answers[room.qIndex];
+    if (myAns) {
+      body = `<div class="card center"><div class="sub">CÂU ${room.qIndex + 1} / ${room.questions.length}</div><div class="timer" id="pTimer"></div><div class="big-result">🔒 Đã gửi câu trả lời!</div><p class="sub">Bạn chọn <b>${LETTERS[myAns.choice]}. ${esc(q.a[myAns.choice])}</b> — ngồi chờ MC công bố đáp án nhé, hồi hộp chưa? 😆</p></div>`;
+    } else {
+      body = `<div class="card"><div class="sub center">CÂU ${room.qIndex + 1} / ${room.questions.length} — trả lời càng nhanh, điểm càng cao đó!</div><div class="timer" id="pTimer">${total}</div>
+        <div class="qtext">${esc(q.q)}</div>
+        <div class="answers">${q.a.map((t, i) => `<button class="ans ${LETTERS[i]}" onclick="playerAnswer(${i})"><span class="sh">${SHAPES[i]}</span><span><b>${LETTERS[i]}.</b> ${esc(t)}</span></button>`).join("")}</div></div>`;
+    }
+    setTimeout(() => startTimer(() => Math.max(0, (room.qStartedAt + total * 1000 - Date.now()) / 1000), r => {
+      const el = $("pTimer"); if (!el) { stopTimer(); return; }
+      el.textContent = Math.ceil(r); el.classList.toggle("low", r <= 5);
+    }), 0);
+  } else if (room.status === "revealed") {
+    const q = room.questions[room.qIndex];
+    const myAns = player.answers && player.answers[room.qIndex];
+    if (!myAns) body = `<div class="card center"><div class="big-result">⏰ Hết giờ mất rồi!</div><p class="sub">Câu này bạn chưa kịp chọn đáp án. Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p class="sub">Đừng buồn, còn nhiều câu hay phía sau đang chờ bạn!</p></div>`;
+    else if (myAns.correct) body = `<div class="card center"><div class="big-result" style="color:var(--ok)">🎉 Đúng rồi, giỏi quá!</div><p class="sub">Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p style="font-size:19px">+ <b style="color:var(--purple2)">${myAns.points} điểm</b> câu này · Tổng: <b>${mine.total} điểm</b></p></div>`;
+    else body = `<div class="card center"><div class="big-result" style="color:var(--bad)">🥹 Tiếc quá, chưa đúng rồi</div><p class="sub">Bạn chọn <b>${LETTERS[myAns.choice]}. ${esc(q.a[myAns.choice])}</b> · Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p class="sub">Tổng điểm hiện tại: <b>${mine.total}</b> — cố lên ở câu sau nhé!</p></div>`;
+  } else if (room.status === "finished") {
+    const top = ranked(room.players).slice(0, 10);
+    const myRank = ranked(room.players).findIndex(p => p.pid === me.pid) + 1;
+    body = `<div class="card center"><h2>🏁 Hết ván rồi!</h2><p class="sub">Bạn xếp hạng <b style="font-size:19px;color:var(--purple2)">#${myRank || "—"}</b> với <b>${mine.total} điểm</b> · Đúng ${mine.correct} câu</p>${podiumHtml(top)}${lbHtml(top)}<div style="margin-top:14px"><button class="btn alt" onclick="playerLeave()">← Vào phòng khác chơi tiếp</button></div></div>`;
+  }
+  box.innerHTML = myHead + body;
+}
+async function playerAnswer(choice) {
+  const room = me.room; if (!room || room.status !== "playing") return;
+  const q = room.questions[room.qIndex], total = (q.time || 15) * 1000;
+  const elapsed = Date.now() - room.qStartedAt;
+  if (elapsed > total + 1500) return;
+  const correct = choice === q.correct;
+  const frac = Math.max(0, 1 - elapsed / total);
+  const points = correct ? Math.round(500 + 500 * frac) : 0;
+  stopTimer();
+  await DB.set("rooms/" + me.code + "/players/" + me.pid + "/answers/" + room.qIndex, { choice, correct, points, elapsedMs: elapsed, at: Date.now() });
+}
+</script>
+
+<script>
+/* ================= QUẢN TRỊ ================= */
+let adminAuthed = sessionStorage.getItem("dovui_admin") === "1";
+let admin = { sets: {}, editingId: null };
+function adminInit() {
+  $("admin-lock").classList.toggle("hidden", adminAuthed);
+  $("admin-panel").classList.toggle("hidden", !adminAuthed);
+  if (!adminAuthed) return;
+  const off = DB.on("sets", sets => { admin.sets = sets || {}; adminRender(); });
+  unsubs.push(off);
+}
+function adminLogin() {
+  if ($("adminPass").value === ADMIN_PASSWORD) {
+    adminAuthed = true; sessionStorage.setItem("dovui_admin", "1");
+    $("adminMsg").innerHTML = ""; adminInit();
+  } else {
+    $("adminMsg").innerHTML = "<div class='msg err'>Mật khẩu chưa đúng rồi — bạn thử lại nhé.</div>";
+  }
+}
+function adminRender() {
+  const panel = $("admin-panel");
+  const list = Object.entries(admin.sets).map(([id, s]) => `
+    <div class="card" style="padding:14px 18px"><div class="row">
+      <div><b>${esc(s.name)}</b> <span class="pill">${(s.questions || []).length} câu</span></div>
+      <div class="fix"><button class="btn small alt" onclick="adminEdit('${id}')">✏️ Sửa</button>
+      <button class="btn small danger" onclick="adminDelete('${id}')">🗑️ Xóa bộ</button></div>
+    </div></div>`).join("") || "<p class='sub'>Chưa có bộ câu hỏi nào — tạo bộ đầu tiên thôi!</p>";
+  let editor = "";
+  if (admin.editingId) {
+    const s = admin.sets[admin.editingId] || { name: "", questions: [] };
+    const qs = s.questions || [];
+    editor = `<div class="card"><h3>✏️ Đang sửa: ${esc(s.name) || "(bộ mới)"}</h3>
+      <label>Tên bộ câu hỏi</label><input type="text" id="setName" value="${esc(s.name || "")}">
+      <div id="qList">${qs.map((q, qi) => qRowHtml(q, qi)).join("")}</div>
+      <div class="hostbar">
+        <button class="btn alt" onclick="adminAddQ()">+ Thêm câu hỏi</button>
+        <button class="btn" onclick="adminSave()">💾 Lưu bộ câu hỏi</button>
+        <button class="btn alt" onclick="admin.editingId=null;adminRender()">Đóng</button>
+      </div>
+      <div id="saveMsg"></div></div>`;
+  }
+  panel.innerHTML = `
+    <div class="card"><h2>🗂️ Chăm sóc bộ câu hỏi</h2>
+      <div class="sub">Mọi bộ câu hỏi đều được lưu trên máy chủ — MC mở phòng ở máy nào cũng thấy. Mật khẩu quản trị đổi ở biến <span class="kbd">ADMIN_PASSWORD</span> đầu file.</div>
+      <div class="hostbar">
+        <button class="btn" onclick="adminNew()">+ Tạo bộ mới</button>
+        <button class="btn alt" onclick="adminTemplate()">⬇️ Tải file Excel mẫu</button>
+      </div>
+      <label>Nhập bộ câu hỏi từ Excel (.xlsx / .csv) — cột: Câu hỏi | A | B | C | D | Đáp án (A/B/C/D) | Thời gian (giây)</label>
+      <input type="text" id="importName" placeholder="Tên bộ khi nhập từ Excel — VD: Đố vui 20/10">
+      <input type="file" id="importFile" accept=".xlsx,.xls,.csv" style="margin-top:8px">
+      <div style="margin-top:10px"><button class="btn alt" onclick="adminImport()">📥 Nhập từ file đã chọn</button></div>
+      <div id="importMsg"></div>
+    </div>
+    ${editor}
+    <h3 style="margin:18px 0 4px">Các bộ hiện có</h3>${list}`;
+}
+function qRowHtml(q, qi) {
+  return `<div style="border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:10px" data-qrow="${qi}">
+    <div class="row"><div><label style="margin-top:0">Câu ${qi + 1}</label><input type="text" data-f="q" value="${esc(q.q || "")}" placeholder="Nội dung câu hỏi"></div>
+    <div class="fix"><button class="btn small danger" onclick="adminDelQ(${qi})">✕</button></div></div>
+    <div class="row">
+      <div><input type="text" data-f="a0" value="${esc((q.a || [])[0] || "")}" placeholder="A"></div>
+      <div><input type="text" data-f="a1" value="${esc((q.a || [])[1] || "")}" placeholder="B"></div>
+      <div><input type="text" data-f="a2" value="${esc((q.a || [])[2] || "")}" placeholder="C"></div>
+      <div><input type="text" data-f="a3" value="${esc((q.a || [])[3] || "")}" placeholder="D"></div>
+    </div>
+    <div class="row">
+      <div><label>Đáp án đúng</label><select data-f="correct">${LETTERS.map((L, i) => `<option value="${i}" ${i === (q.correct || 0) ? "selected" : ""}>${L}</option>`).join("")}</select></div>
+      <div><label>Thời gian (giây)</label><input type="number" data-f="time" value="${q.time || 15}" min="5" max="120"></div>
+    </div></div>`;
+}
+function collectEditor() {
+  const name = $("setName").value.trim();
+  const rows = [...document.querySelectorAll("[data-qrow]")];
+  const questions = rows.map(r => {
+    const g = f => r.querySelector(`[data-f="${f}"]`).value;
+    return { q: g("q").trim(), a: [g("a0").trim(), g("a1").trim(), g("a2").trim(), g("a3").trim()], correct: parseInt(g("correct"), 10) || 0, time: Math.min(120, Math.max(5, parseInt(g("time"), 10) || 15)) };
+  }).filter(x => x.q && x.a.every(v => v));
+  return { name, questions };
+}
+async function adminSave() {
+  const { name, questions } = collectEditor();
+  const msg = $("saveMsg");
+  if (!name) { msg.innerHTML = "<div class='msg err'>Bạn chưa đặt tên cho bộ câu hỏi rồi.</div>"; return; }
+  if (!questions.length) { msg.innerHTML = "<div class='msg err'>Cần ít nhất 1 câu hỏi điền đầy đủ (câu hỏi + đủ 4 đáp án) bạn nhé.</div>"; return; }
+  await DB.set("sets/" + admin.editingId, { name, questions, updatedAt: Date.now() });
+  msg.innerHTML = "<div class='msg okm'>✅ Đã lưu bộ “" + esc(name) + "” — " + questions.length + " câu.</div>";
+}
+function adminNew() { const id = uid(); admin.sets[id] = { name: "", questions: [{ q: "", a: ["", "", "", ""], correct: 0, time: 15 }] }; admin.editingId = id; adminRender(); }
+function adminEdit(id) { admin.editingId = id; adminRender(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+async function adminDelete(id) { if (!confirm("Bạn chắc chắn muốn xóa hẳn bộ câu hỏi này không?")) return; await DB.remove("sets/" + id); if (admin.editingId === id) admin.editingId = null; }
+function adminAddQ() {
+  const cur = collectEditor();
+  cur.questions.push({ q: "", a: ["", "", "", ""], correct: 0, time: 15 });
+  admin.sets[admin.editingId] = cur; adminRender();
+}
+function adminDelQ(qi) {
+  const cur = collectEditor();
+  cur.questions.splice(qi, 1);
+  admin.sets[admin.editingId] = cur; adminRender();
+}
+function adminTemplate() {
+  const rows = [["Câu hỏi", "A", "B", "C", "D", "Đáp án", "Thời gian"],
+    ["Thủ đô của Việt Nam là thành phố nào?", "Đà Nẵng", "Hà Nội", "Huế", "Cần Thơ", "B", 15],
+    ["Một tuần có bao nhiêu ngày?", "5", "6", "7", "8", "C", 10]];
+  const ws = XLSX.utils.aoa_to_sheet(rows); const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "CauHoi"); XLSX.writeFile(wb, "mau-cau-hoi-do-vui.xlsx");
+}
+function adminImport() {
+  const f = $("importFile").files[0], msg = $("importMsg");
+  const name = $("importName").value.trim();
+  if (!f) { msg.innerHTML = "<div class='msg err'>Bạn chưa chọn file Excel nào cả.</div>"; return; }
+  if (!name) { msg.innerHTML = "<div class='msg err'>Bạn đặt tên cho bộ câu hỏi trước khi nhập file nhé.</div>"; return; }
+  const rd = new FileReader();
+  rd.onload = async e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" });
+      const questions = [];
+      rows.slice(1).forEach(r => {
+        if (!r[0] || !r[1] || !r[2] || !r[3] || !r[4]) return;
+        let c = String(r[5] ?? "A").trim().toUpperCase();
+        let ci = LETTERS.indexOf(c); if (ci < 0) ci = Math.min(3, Math.max(0, (parseInt(c, 10) || 1) - 1));
+        questions.push({ q: String(r[0]).trim(), a: [String(r[1]).trim(), String(r[2]).trim(), String(r[3]).trim(), String(r[4]).trim()], correct: ci, time: Math.min(120, Math.max(5, parseInt(r[6], 10) || 15)) });
+      });
+      if (!questions.length) { msg.innerHTML = "<div class='msg err'>Chưa đọc được câu hỏi nào — bạn xem lại định dạng file theo file mẫu giúp mình nhé.</div>"; return; }
+      await DB.set("sets/" + uid(), { name, questions, createdAt: Date.now() });
+      msg.innerHTML = "<div class='msg okm'>✅ Đã nhập bộ “" + esc(name) + "” — " + questions.length + " câu. MC chọn bộ này khi tạo phòng là chơi được ngay.</div>";
+    } catch (err) { msg.innerHTML = "<div class='msg err'>Đọc file bị lỗi rồi: " + esc(err.message) + "</div>"; }
+  };
+  rd.readAsArrayBuffer(f);
+}
+
+/* ================= KHỞI TẠO ================= */
+DB.init();
+seedIfEmpty().then(() => {
+  const m = location.search.match(/[?&]join=([A-Za-z0-9]+)/);
+  go(m ? "player" : "home");
+});
+</script>
+</body>
+</html>
