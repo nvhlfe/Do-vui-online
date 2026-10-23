@@ -122,6 +122,10 @@ footer{color:var(--mut);text-align:center;font-size:13px;padding:28px 10px 36px}
 select.setpick{font-size:16px}
 .hostbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .hostbar .btn{flex:1;min-width:150px}
+.cloud-wrap{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;justify-content:center;padding:30px 12px;min-height:230px}
+.cloud-word{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;line-height:1.05;padding:2px 4px;animation:rise .4s ease both}
+.phrase-chip{display:inline-block;background:#FFF4D6;border:1.5px solid #FFE1A1;color:#7A4A00;border-radius:999px;padding:9px 15px;font-weight:700;font-size:15px;margin:4px;animation:rise .3s ease both}
+.my-chip{display:inline-block;background:var(--soft);border:1.5px solid var(--line);color:var(--purple);border-radius:999px;padding:7px 13px;font-weight:600;font-size:14px;margin:3px}
 body.joinmode nav.tabs{display:none!important}
 .qrbox img{cursor:zoom-in}
 #qrModal{position:fixed;inset:0;background:rgba(34,8,74,.9);z-index:60;display:flex;align-items:center;justify-content:center;padding:18px}
@@ -164,10 +168,10 @@ body.joinmode nav.tabs{display:none!important}
   <section id="view-player" class="hidden">
     <div id="player-join" class="card">
       <h2>📱 Vào phòng chơi</h2>
-      <div class="sub">Nhập mã phòng đang hiện trên màn hình lớn và tên của bạn — chỉ 5 giây là xong!</div>
+      <div class="sub">Nhập mã phòng đang hiện trên màn hình lớn — chỉ 5 giây là xong! Phòng trắc nghiệm thì điền thêm tên của bạn, còn phòng đám mây chữ thì khỏi cần tên luôn.</div>
       <label>Mã phòng</label>
       <input type="text" id="joinCode" placeholder="VD: ABC123" style="text-transform:uppercase" maxlength="8">
-      <label>Tên người chơi</label>
+      <label>Tên người chơi <span style="font-weight:400">(phòng đám mây chữ bỏ trống cũng được)</span></label>
       <input type="text" id="joinName" placeholder="VD: Minh Anh" maxlength="30">
       <div style="margin-top:16px"><button class="btn" onclick="playerJoin()">Vào chơi ngay →</button></div>
       <div id="joinMsg"></div>
@@ -199,6 +203,15 @@ body.joinmode nav.tabs{display:none!important}
         <input type="text" id="hostRoomName" value="Đố Vui Online">
         <div style="margin-top:16px"><button class="btn" onclick="hostCreateRoom()">🚀 Mở phòng & rủ mọi người vào</button></div>
         <div class="sub" style="margin-top:10px">Chưa ưng bộ câu hỏi nào? <a href="#" onclick="go('admin');setTimeout(()=>{var e=document.getElementById('admin-qpanel');if(e)e.scrollIntoView({behavior:'smooth'})},80);return false;">Tự tạo / nhập từ Excel ở phần dưới →</a></div>
+      </div>
+      <div id="cloud-create" class="card">
+        <h2>☁️ Đám mây chữ — trả lời tự do</h2>
+        <div class="sub">Admin đặt 1 câu hỏi mở, mọi người quét QR vào trả lời bằng vài từ ngắn — <b>không cần nhập tên</b>. Các từ sẽ hiện lên màn hình lớn của Admin thành một đám mây chữ: từ nào được nhiều người nhắc tới sẽ to dần lên.</div>
+        <label>Câu hỏi cho mọi người</label>
+        <input type="text" id="cloudPrompt" value="Cảm giác của anh chị lúc này thế nào?">
+        <label>Mỗi câu trả lời tối đa</label>
+        <select id="cloudMaxWords"><option value="3">3 từ</option><option value="5" selected>5 từ</option><option value="10">10 từ</option></select>
+        <div style="margin-top:16px"><button class="btn" onclick="cloudCreateRoom()">☁️ Mở phòng đám mây chữ</button></div>
       </div>
       <div id="host-room" class="hidden"></div>
       <div id="admin-qpanel"></div>
@@ -377,8 +390,9 @@ async function hostInit() {
     if (!pick.options.length) pick.innerHTML = "<option value=''>— Chưa có bộ câu hỏi —</option>";
   });
   unsubs.push(off);
-  if (host.code) { $("host-create").classList.add("hidden"); $("host-room").classList.remove("hidden"); }
-  else { $("host-create").classList.remove("hidden"); $("host-room").classList.add("hidden"); }
+  const cc = $("cloud-create");
+  if (host.code) { $("host-create").classList.add("hidden"); if (cc) cc.classList.add("hidden"); $("host-room").classList.remove("hidden"); }
+  else { $("host-create").classList.remove("hidden"); if (cc) cc.classList.remove("hidden"); $("host-room").classList.add("hidden"); }
 }
 async function hostCreateRoom() {
   const setId = $("hostSetPick").value;
@@ -397,6 +411,7 @@ async function hostCreateRoom() {
   await DB.set("rooms/" + code, room);
   host.code = code;
   $("host-create").classList.add("hidden");
+  const cc2 = $("cloud-create"); if (cc2) cc2.classList.add("hidden");
   $("host-room").classList.remove("hidden");
   hostWatch();
 }
@@ -409,6 +424,7 @@ function joinLink(code) { return location.origin + location.pathname + "?join=" 
 function hostRender() {
   const box = $("host-room"), room = host.room, code = host.code;
   if (!room) { box.innerHTML = "<div class='card'><h2>Phòng đã đóng rồi</h2><div class='sub'>MC đã bắt đầu ván mới rồi. Bấm nút bên dưới để mở một phòng khác nhé.</div><div style='margin-top:12px'><button class='btn' onclick='hostReset(true)'>← Mở phòng mới</button></div></div>"; return; }
+  if (room.type === "cloud") { cloudHostRender(room); return; }
   const players = room.players || {}, pCount = Object.keys(players).length;
   const top = ranked(players).slice(0, 10);
   const head = `
@@ -504,6 +520,7 @@ async function hostReset(backToCreate) {
   host = { code: null, room: null };
   $("host-room").classList.add("hidden"); $("host-room").innerHTML = "";
   $("host-create").classList.remove("hidden");
+  const cc3 = $("cloud-create"); if (cc3) cc3.classList.remove("hidden");
   if (!backToCreate) hostInit();
 }
 </script>
@@ -514,16 +531,23 @@ let me = { code: null, pid: null, name: null, room: null };
 function playerInit() {
   const m = location.search.match(/[?&]join=([A-Za-z0-9]+)/);
   if (m && !$("joinCode").value) $("joinCode").value = m[1].toUpperCase();
-  if (me.code) { $("player-join").classList.add("hidden"); $("player-room").classList.remove("hidden"); }
-  else { $("player-join").classList.remove("hidden"); $("player-room").classList.add("hidden"); }
+  if (me.code) { $("player-join").classList.add("hidden"); $("player-room").classList.remove("hidden"); return; }
+  $("player-join").classList.remove("hidden"); $("player-room").classList.add("hidden");
+  if (m && !playerInit._tried) {
+    playerInit._tried = true;
+    const code = m[1].toUpperCase();
+    DB.get("rooms/" + code).then(r => { if (r && r.type === "cloud" && !me.code) enterCloudPlayer(code); }).catch(() => {});
+  }
 }
 async function playerJoin() {
   const code = $("joinCode").value.trim().toUpperCase();
   const name = $("joinName").value.trim();
   const msg = $("joinMsg");
-  if (!code || !name) { msg.innerHTML = "<div class='msg err'>Bạn điền thiếu rồi — cần cả mã phòng và tên của bạn nhé 😊</div>"; return; }
+  if (!code) { msg.innerHTML = "<div class='msg err'>Bạn chưa nhập mã phòng rồi 😊</div>"; return; }
   const room = await DB.get("rooms/" + code);
   if (!room) { msg.innerHTML = "<div class='msg err'>Chưa tìm thấy phòng <b>" + esc(code) + "</b>. Bạn kiểm tra lại mã trên màn hình lớn giúp mình nhé.</div>"; return; }
+  if (room.type === "cloud") { enterCloudPlayer(code); return; }
+  if (!name) { msg.innerHTML = "<div class='msg err'>Phòng trắc nghiệm cần tên của bạn để lên bảng vinh danh đó — điền tên giúp mình nhé 😊</div>"; return; }
   if (room.status === "finished") { msg.innerHTML = "<div class='msg err'>Phòng này vừa kết thúc rồi. Hẹn gặp bạn ở ván sau nhé!</div>"; return; }
   let pid = sessionStorage.getItem("dovui_pid_" + code);
   if (!pid || !(room.players && room.players[pid])) {
@@ -755,5 +779,140 @@ seedIfEmpty().then(() => {
     <div class="sub" style="margin-top:10px">Hoặc bấm vào bất cứ đâu để đóng</div>
   </div>
 </div>
+
+<script>
+/* ================= ĐÁM MÂY CHỮ (trả lời tự do, không cần tên) ================= */
+host.cloudView = "cloud";
+async function cloudCreateRoom() {
+  const prompt = $("cloudPrompt").value.trim();
+  if (!prompt) { alert("Admin chưa nhập câu hỏi cho mọi người rồi."); return; }
+  const maxWords = parseInt($("cloudMaxWords").value, 10) || 5;
+  let code = roomCode();
+  if (await DB.get("rooms/" + code)) code = roomCode();
+  await DB.set("rooms/" + code, { type: "cloud", name: prompt, prompt, maxWords, status: "open", createdAt: Date.now(), answers: {} });
+  host.code = code;
+  $("host-create").classList.add("hidden");
+  const cc = $("cloud-create"); if (cc) cc.classList.add("hidden");
+  $("host-room").classList.remove("hidden");
+  hostWatch();
+}
+function cloudWords(room) {
+  const freq = {};
+  Object.values(room.answers || {}).forEach(a => {
+    String(a.text || "").toLowerCase().replace(/[.,!?;:"“”'’()…/\\-]/g, " ").split(/\s+/).filter(Boolean)
+      .forEach(wd => { freq[wd] = (freq[wd] || 0) + 1; });
+  });
+  return Object.entries(freq).sort((x, y) => y[1] - x[1]);
+}
+const CLOUD_COLORS = ["#E21B3C", "#1368CE", "#E8930C", "#26890C", "#7B2FF7", "#FF5D8F", "#0097B5", "#D35400"];
+function cloudHostRender(room) {
+  const box = $("host-room"), code = host.code;
+  const answers = Object.values(room.answers || {}).sort((a, b) => (a.at || 0) - (b.at || 0));
+  const people = new Set(answers.map(a => a.pid)).size;
+  let display = "";
+  if (!answers.length) {
+    display = `<div class="cloud-wrap"><p class="sub" style="font-size:17px">Chưa có câu trả lời nào — các từ mọi người gửi sẽ hiện lên đây ngay lập tức ☁️</p></div>`;
+  } else if (host.cloudView === "list") {
+    display = `<div style="padding:16px 4px">${answers.map(a => `<span class="phrase-chip">💬 ${esc(a.text)}</span>`).join("")}</div>`;
+  } else {
+    const words = cloudWords(room);
+    const fmax = Math.max(1, ...words.map(w => w[1]));
+    display = `<div class="cloud-wrap">${words.map(([wd, f], i) => {
+      const size = Math.round(21 + (f / fmax) * 47);
+      const col = CLOUD_COLORS[[...wd].reduce((s, c) => s + c.charCodeAt(0), 0) % CLOUD_COLORS.length];
+      return `<span class="cloud-word" title="${f} lần" style="font-size:${size}px;color:${col}">${esc(wd)}</span>`;
+    }).join("")}</div>`;
+  }
+  box.innerHTML = `
+    <div class="card">
+      <div class="row" style="align-items:flex-start">
+        <div>
+          <span class="pill">☁️ PHÒNG ĐÁM MÂY CHỮ</span>
+          <h2 style="margin-top:8px">${esc(room.prompt)}</h2>
+          <div class="sub">Mỗi câu trả lời tối đa <b>${room.maxWords || 5} từ</b> · Không cần nhập tên</div>
+          <div style="margin-top:8px"><span class="pill">💬 ${answers.length} câu trả lời</span> <span class="pill">🙋 ${people} bạn đã tham gia</span></div>
+        </div>
+        <div class="fix center">
+          <div class="sub">MÃ PHÒNG</div>
+          <div class="code-big" style="font-size:44px;letter-spacing:4px">${code}</div>
+          <button class="btn small alt" onclick="navigator.clipboard&&navigator.clipboard.writeText('${code}')">Chép mã</button>
+          <button class="btn small alt" onclick="navigator.clipboard&&navigator.clipboard.writeText('${joinLink(code)}')">Chép liên kết</button>
+        </div>
+        <div class="fix qrbox">
+          <img alt="QR tham gia" title="Bấm để phóng to" onclick="qrZoom(true)" src="https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=${encodeURIComponent(joinLink(code))}">
+          <div class="sub">Quét là vào chơi ngay<br>👆 Bấm vào mã QR để phóng to</div>
+        </div>
+      </div>
+      <div class="hostbar">
+        <button class="btn ${host.cloudView === "cloud" ? "" : "alt"}" onclick="host.cloudView='cloud';hostRender()">☁️ Xem đám mây chữ</button>
+        <button class="btn ${host.cloudView === "list" ? "" : "alt"}" onclick="host.cloudView='list';hostRender()">💬 Xem từng câu trả lời</button>
+        <button class="btn alt" onclick="cloudClearAnswers()">🧹 Xóa hết câu trả lời</button>
+        <button class="btn danger" onclick="hostReset(false)">🏁 Đóng phòng này</button>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <div><input type="text" id="cloudPromptInput" value="${esc(room.prompt)}" placeholder="Đổi sang câu hỏi mới…"></div>
+        <div class="fix"><button class="btn small" onclick="cloudSetPrompt()">Đổi câu hỏi</button></div>
+      </div>
+      <div class="sub">Đổi câu hỏi sẽ xóa hết câu trả lời hiện tại để bắt đầu lượt mới.</div>
+    </div>
+    <div class="card">${display}</div>`;
+}
+async function cloudSetPrompt() {
+  const v = $("cloudPromptInput").value.trim();
+  if (!v || !host.room) return;
+  if (v === host.room.prompt) return;
+  if (Object.keys(host.room.answers || {}).length && !confirm("Đổi câu hỏi sẽ xóa hết câu trả lời hiện tại. Tiếp tục nhé?")) return;
+  await DB.remove("rooms/" + host.code + "/answers");
+  await DB.update("rooms/" + host.code, { prompt: v, name: v });
+}
+async function cloudClearAnswers() {
+  if (!confirm("Xóa hết câu trả lời trong phòng này?")) return;
+  await DB.remove("rooms/" + host.code + "/answers");
+}
+function enterCloudPlayer(code) {
+  let pid = sessionStorage.getItem("dovui_pid_" + code);
+  if (!pid) { pid = uid(); sessionStorage.setItem("dovui_pid_" + code, pid); }
+  me = { code, pid, name: null, room: null, cloud: true };
+  $("player-join").classList.add("hidden");
+  $("player-room").classList.remove("hidden");
+  clearSubs();
+  const off = DB.on("rooms/" + code, r => { me.room = r; cloudPlayerRender(); });
+  unsubs.push(off);
+}
+function cloudCountWords() {
+  const el = $("cloudInput"); if (!el || !me.room) return;
+  const n = el.value.trim() ? el.value.trim().split(/\s+/).length : 0;
+  const max = me.room.maxWords || 5;
+  const c = $("cloudCount"); if (c) { c.textContent = n + "/" + max + " từ"; c.style.color = n > max ? "var(--bad)" : ""; }
+}
+function cloudPlayerRender() {
+  const box = $("player-room"), room = me.room;
+  if (!room) { box.innerHTML = "<div class='card center'><h2>Phòng đã đóng rồi</h2><p class='sub'>Admin đã đóng phòng này. Hẹn gặp bạn ở lượt chơi sau nhé!</p><button class='btn' onclick='playerLeave()'>← Vào phòng khác</button></div>"; return; }
+  const mine = Object.values(room.answers || {}).filter(a => a.pid === me.pid);
+  const max = room.maxWords || 5;
+  box.innerHTML = `
+    <div class="card center">
+      <span class="pill">☁️ PHÒNG ${esc(me.code)} · ĐÁM MÂY CHỮ</span>
+      <div class="qtext" style="margin-top:12px">${esc(room.prompt)}</div>
+      <p class="sub">Trả lời ngắn gọn trong <b>${max} từ</b> thôi nhé — từ của bạn sẽ hiện lên màn hình lớn ngay lập tức, không cần ghi tên đâu.</p>
+      <input type="text" id="cloudInput" placeholder="Gõ câu trả lời của bạn vào đây…" maxlength="120" oninput="cloudCountWords()">
+      <div class="row" style="margin-top:6px"><div class="sub" id="cloudCount">0/${max} từ</div><div class="fix"><button class="btn" onclick="submitCloudAnswer()">🚀 Gửi lên màn hình</button></div></div>
+      <div id="cloudMsg"></div>
+      ${mine.length ? `<div style="margin-top:14px"><div class="sub" style="margin-bottom:4px">Bạn đã gửi ${mine.length} câu:</div>${mine.map(a => `<span class="my-chip">💬 ${esc(a.text)}</span>`).join("")}</div>` : ""}
+    </div>`;
+  const inp = $("cloudInput"); if (inp) inp.focus();
+}
+async function submitCloudAnswer() {
+  const el = $("cloudInput"); if (!el || !me.room) return;
+  const text = el.value.trim().replace(/\s+/g, " ");
+  const msg = $("cloudMsg");
+  const max = me.room.maxWords || 5;
+  if (!text) { if (msg) msg.innerHTML = "<div class='msg err'>Bạn chưa gõ gì cả 😊</div>"; return; }
+  const n = text.split(/\s+/).length;
+  if (n > max) { if (msg) msg.innerHTML = "<div class='msg err'>Dài quá rồi — câu trả lời chỉ tối đa " + max + " từ thôi. Bạn rút gọn giúp mình nhé.</div>"; return; }
+  await DB.set("rooms/" + me.code + "/answers/" + uid(), { text, pid: me.pid, at: Date.now() });
+}
+</script>
+
 </body>
 </html>
