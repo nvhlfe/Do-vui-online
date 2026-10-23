@@ -122,6 +122,39 @@ footer{color:var(--mut);text-align:center;font-size:13px;padding:28px 10px 36px}
 select.setpick{font-size:16px}
 .hostbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .hostbar .btn{flex:1;min-width:150px}
+.wheel-wrap{position:relative;width:min(74vw,560px);margin:8px auto}
+#wheelCanvas{width:100%;height:auto;display:block}
+.wheel-pointer{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:36px;color:var(--a);z-index:3;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,.25)}
+.wheel-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:30px;background:#fff;border-radius:50%;width:66px;height:66px;display:flex;align-items:center;justify-content:center;border:4px solid var(--purple);pointer-events:none}
+.slot-row{margin:20px 0 10px}
+.slot-reel{display:inline-flex;align-items:center;justify-content:center;width:76px;height:98px;margin:5px;background:#fff;border:3px solid var(--purple2);border-radius:16px;font-family:"Baloo 2",sans-serif;font-size:54px;font-weight:800;color:var(--purple);box-shadow:0 8px 20px rgba(70,23,143,.12)}
+.slot-reel.stopped{border-color:var(--d);background:#EBF7E9;color:var(--ink)}
+.race-swarm{position:relative;height:440px;border-radius:18px;overflow:hidden;margin:16px 0 6px;border:2px solid #fff;box-shadow:0 10px 26px rgba(70,23,143,.14);text-align:left}
+.token{position:absolute;transform:translateY(-50%);transition:left .12s linear;font-size:26px;white-space:nowrap;z-index:2;line-height:1}
+.token i{font-style:normal}
+.tok-name{display:none;font-style:normal;background:rgba(0,0,0,.52);color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px;margin-left:2px;vertical-align:middle}
+.token.show-name .tok-name{display:inline-block}
+.token.leading{font-size:33px;z-index:4}
+.race-topbar{font-size:15px;background:var(--soft);border-radius:12px;padding:9px 14px;margin:6px 0 4px;text-align:left}
+.swarm-flag{position:absolute;right:10px;top:0;bottom:0;display:flex;align-items:center;font-size:30px;opacity:.9;z-index:1}
+.race-comment{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:700;font-size:clamp(17px,2.6vw,23px);color:var(--purple);background:var(--soft);border:2px dashed var(--purple2);border-radius:16px;padding:10px 16px;margin:14px auto;max-width:820px;min-height:52px;display:flex;align-items:center;justify-content:center}
+.race-count{font-family:"Baloo 2",sans-serif;font-size:110px;font-weight:800;color:var(--a);line-height:1;margin:10px 0}
+.race-track{margin:16px 0 6px;text-align:left}
+.lane{position:relative;height:54px;border-radius:14px;margin:9px 0;overflow:hidden;background:#eef;border:2px solid #fff;box-shadow:0 4px 14px rgba(70,23,143,.10)}
+.theme-car .lane{background:linear-gradient(180deg,#5b6472,#49505c)}
+.theme-boat .lane{background:linear-gradient(180deg,#7ecbf2,#4aa8dd)}
+.theme-horse .lane{background:linear-gradient(180deg,#a5d6a7,#7cb342)}
+.theme-duck .lane{background:linear-gradient(180deg,#aee7ff,#6ec6e8)}
+.theme-climb .lane{background:repeating-linear-gradient(90deg,#f3d9a4 0 34px,#e8c07a 34px 68px)}
+.lane-fill{position:absolute;top:0;left:0;bottom:0;width:0;background:rgba(255,255,255,.28);border-right:3px dashed rgba(255,255,255,.65)}
+.lane-name{position:absolute;left:12px;top:5px;font-weight:800;font-size:14px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45);z-index:2;max-width:55%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.theme-climb .lane-name{color:#7A4A00;text-shadow:none}
+.lane .racer{position:absolute;top:20px;left:0;font-size:29px;line-height:1;transition:left .12s linear;z-index:3;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
+.lane-flag{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:24px;z-index:1}
+.lane.leading{outline:3px solid var(--c);outline-offset:-1px}
+#confettiBox{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+.confetti{position:absolute;top:-16px;display:block;border-radius:2px;animation-name:confetti-fall;animation-timing-function:ease-in;animation-fill-mode:forwards}
+@keyframes confetti-fall{to{transform:translateY(105vh) rotate(var(--rot))}}
 body.stage-mode header.top,body.stage-mode footer{display:none!important}
 body.stage-mode .wrap{max-width:1240px}
 .stage-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0 12px}
@@ -247,6 +280,59 @@ body.joinmode nav.tabs{display:none!important}
           <button class="btn alt" onclick="sfxVictory()">▶ Nghe thử: Vinh danh</button>
         </div>
         <div class="sub">Nhạc nền tự phát khi mở phòng (ở sảnh chờ) và tự nhỏ xuống 40% khi đang chạy câu hỏi để không át tiếng MC. Trên màn hình chiếu cũng có nút bật/tắt nhạc và thanh chỉnh âm lượng nhanh.</div>
+      </div>
+      <div class="card" id="race-create">
+        <h2>🎁 Lucky Draw — Quay thưởng may mắn</h2>
+        <div class="sub">Ba hình thức quay thưởng chiếu lên màn hình lớn: cuộc đua về đích, vòng quay may mắn và quay chữ/số tìm mã trúng thưởng. Mọi người chỉ xem và cổ vũ — không cần dùng điện thoại.</div>
+        <label>Tên giải thưởng</label>
+        <input type="text" id="racePrize" value="Giải Đặc Biệt">
+        <label>Hình thức quay thưởng</label>
+        <select id="ldFormat" onchange="ldFormatChange()">
+          <option value="race">🏁 Cuộc đua may mắn (đua xe / thuyền / ngựa / vịt / leo thang)</option>
+          <option value="wheel">🎡 Vòng quay may mắn</option>
+          <option value="slot">🎰 Quay chữ / số (ra mã trúng thưởng)</option>
+        </select>
+        <div id="ldNamesBlock">
+          <label>Danh sách người tham gia (mỗi dòng 1 người) — không giới hạn số người</label>
+          <textarea id="raceNames" rows="7" placeholder="Nguyễn Văn A&#10;Trần Thị B&#10;Lê Văn C&#10;…" oninput="raceParseNames()"></textarea>
+          <div class="row" style="margin-top:6px">
+            <div class="sub" id="raceCount">0 người trong danh sách</div>
+            <div class="fix">
+              <label class="btn small alt" style="cursor:pointer">📂 Nhập từ file Excel/CSV<input type="file" id="raceFile" accept=".xlsx,.xls,.csv,.txt" class="hidden" onchange="raceFileImport(this)"></label>
+              <button class="btn small alt" onclick="document.getElementById('raceNames').value='';raceParseNames()">Xóa danh sách</button>
+            </div>
+          </div>
+        </div>
+        <div id="ldRaceOpts">
+          <div class="row">
+            <div><label>Hình thức đua</label>
+              <select id="raceTheme">
+                <option value="car">🏎️ Đua xe</option>
+                <option value="boat">🚣 Chèo thuyền</option>
+                <option value="horse">🐎 Đua ngựa</option>
+                <option value="duck">🦆 Đua vịt</option>
+                <option value="climb">🧗 Leo thang</option>
+              </select></div>
+            <div><label>Thời lượng cuộc đua — tự nhập số giây</label>
+              <input type="number" id="raceDur" value="32" min="5" max="600" step="1"></div>
+          </div>
+          <div class="sub">Từ 15 người trở lên, đường đua tự chuyển sang kiểu “bầy đàn” như đua vịt (mọi người đua chung một sân) kèm bảng dẫn đầu trực tiếp để nhìn rõ cả đoàn đông.</div>
+        </div>
+        <div id="ldSlotOpts" class="hidden">
+          <div class="row">
+            <div><label>Loại ký tự</label>
+              <select id="slotCharset">
+                <option value="digits">Chỉ số (0–9)</option>
+                <option value="letters">Chỉ chữ (A–Z)</option>
+                <option value="both">Số + chữ</option>
+              </select></div>
+            <div><label>Số ký tự</label>
+              <input type="number" id="slotLen" value="4" min="1" max="12" step="1"></div>
+          </div>
+          <div class="sub">Các ký tự chạy như máy quay số rồi dừng lại lần lượt từng ô — hợp để quay mã số in trên vé/phiếu của mỗi người.</div>
+        </div>
+        <div style="margin-top:14px"><button class="btn" id="ldStartBtn" onclick="ldStart()">🏁 Mở màn hình đua</button></div>
+        <div class="sub">Mẹo: sao chép cột tên từ Excel rồi dán thẳng vào ô danh sách cũng được. Sau khi có người thắng, bấm “Đua tiếp / Quay tiếp” để loại người đó ra và tìm giải tiếp theo.</div>
       </div>
       <div id="admin-qpanel"></div>
     </div>
@@ -387,8 +473,13 @@ function go(view) {
   ["home", "player", "admin", "stage"].forEach(v => { $("view-" + v).classList.toggle("hidden", v !== view); const t = $("tab-" + v); if (t) t.classList.toggle("on", v === view); });
   if (view === "player") playerInit();
   if (view === "admin") adminInit();
+  if (view !== "stage" && window.RACE && window.RACE.timer) window.RACE_StopTimer && window.RACE_StopTimer();
   if (view === "stage") {
-    if (host.code) hostWatch();
+    if (window.STAGE_MODE === "wheel" && window.WHEEL && window.WHEEL.active) window.WHEEL_Render && window.WHEEL_Render();
+    else if (window.STAGE_MODE === "slot" && window.SLOT && window.SLOT.active) window.SLOT_Render && window.SLOT_Render();
+    else if (window.STAGE_MODE === "race" && window.RACE && window.RACE.active) window.RACE_Render && window.RACE_Render();
+    else if (host.code) hostWatch();
+    else if (window.RACE && window.RACE.active) window.RACE_Render && window.RACE_Render();
     else $("host-room").innerHTML = "<div class='card center'><h2>Chưa có phòng nào đang chiếu</h2><p class='sub'>Về khu Admin mở một phòng chơi trước nhé.</p><button class='btn' onclick='go(\'admin\')'>← Về khu Admin</button></div>";
   }
   window.scrollTo({ top: 0 });
@@ -459,6 +550,7 @@ async function hostCreateRoom() {
   };
   await DB.set("rooms/" + code, room);
   host.code = code;
+  window.STAGE_MODE = "room";
   go("stage");
 }
 function hostWatch() {
@@ -831,6 +923,7 @@ async function cloudCreateRoom() {
   if (await DB.get("rooms/" + code)) code = roomCode();
   await DB.set("rooms/" + code, { type: "cloud", name: prompt, prompt, maxWords, status: "open", createdAt: Date.now(), answers: {} });
   host.code = code;
+  window.STAGE_MODE = "room";
   go("stage");
 }
 function cloudWords(room) {
@@ -1062,6 +1155,431 @@ function fxAfterRender(room) {
     const el = bgmEl(); if (el && el.paused) { try { const pr = el.play(); if (pr && pr.then) pr.then(() => refreshAudioUI()).catch(() => {}); } catch (e) {} }
   }
   refreshStageAudioBtns();
+}
+</script>
+
+
+<script>
+/* ================= LUCKY DRAW — CUỘC ĐUA MAY MẮN ================= */
+const RACE_THEMES = {
+  car:   { label: "🏎️ Đua xe",        icon: "🏎️", track: "linear-gradient(180deg,#5b6472,#49505c)", deco: "💨" },
+  boat:  { label: "🚣 Chèo thuyền",   icon: "🚣", track: "linear-gradient(180deg,#7ecbf2,#4aa8dd)", deco: "🌊" },
+  horse: { label: "🐎 Đua ngựa",      icon: "🐎", track: "linear-gradient(180deg,#a5d6a7,#7cb342)", deco: "💨" },
+  duck:  { label: "🦆 Đua vịt",       icon: "🦆", track: "linear-gradient(180deg,#aee7ff,#6ec6e8)", deco: "〰️" },
+  climb: { label: "🧗 Leo thang",     icon: "🧗", track: "repeating-linear-gradient(90deg,#f3d9a4 0 34px,#e8c07a 34px 68px)", deco: "⭐" }
+};
+let race = { active: false, names: [], allNames: [], winners: [], prize: "", theme: "car", dur: 30, racers: [], running: false, finished: false, winner: null, order: [], timer: null, lastLeader: null, comment: "", pace: 1, countStep: 700 };
+window.RACE = race;
+window.RACE_Render = () => raceRender();
+window.RACE_StopTimer = () => raceStopTimer();
+function raceParseNames() {
+  const raw = ($("raceNames") ? $("raceNames").value : "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const seen = new Set(), list = [];
+  raw.forEach(n => { const k = n.toLowerCase(); if (!seen.has(k)) { seen.add(k); list.push(n); } });
+  const c = $("raceCount"); if (c) c.textContent = list.length + " người trong danh sách" + (raw.length !== list.length ? " (đã gộp " + (raw.length - list.length) + " tên trùng)" : "");
+  return list;
+}
+async function raceFileImport(input) {
+  const f = input.files && input.files[0]; if (!f) return;
+  try {
+    let names = [];
+    if (/\.(xlsx|xls)$/i.test(f.name) && window.XLSX) {
+      const buf = await f.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      names = rows.map(r => (r && r[0] != null ? String(r[0]).trim() : "")).filter(Boolean);
+    } else {
+      const text = await f.text();
+      names = text.split(/\r?\n/).map(s => s.split(/[,;\t]/)[0].trim()).filter(Boolean);
+    }
+    if (names.length) { $("raceNames").value = names.join("\n"); raceParseNames(); }
+    else alert("Chưa đọc được tên nào từ file này. Bạn kiểm tra lại file nhé!");
+  } catch (e) { alert("Đọc file chưa được — bạn thử sao chép danh sách rồi dán vào ô nhập nhé!"); }
+  input.value = "";
+}
+function raceSetup() {
+  const names = raceParseNames();
+  if (names.length < 2) { alert("Cần ít nhất 2 người mới đua được. Bạn nhập thêm danh sách nhé!"); return; }
+  race.mode = names.length <= 14 ? "lanes" : "swarm";
+  race.names = names.slice(); race.allNames = names.slice(); race.winners = [];
+  race.prize = $("racePrize").value.trim() || "Giải may mắn";
+  race.theme = $("raceTheme").value || "car";
+  race.dur = parseInt($("raceDur").value, 10) || 30;
+  race.active = true; race.finished = false; race.winner = null; race.order = [];
+  raceBuildRacers();
+  window.STAGE_MODE = "race";
+  go("stage");
+}
+function raceBuildRacers() {
+  race.racers = race.names.map(n => ({ name: n, p: 0, v: 0.85 + Math.random() * 0.3, boost: 0, done: false }));
+  race.finished = false; race.winner = null; race.order = []; race.lastLeader = null;
+  race.comment = "Các tay đua đã vào vị trí! Bà con sẵn sàng cổ vũ chưa nào? 📣";
+}
+function raceBar() {
+  return `<div class="stage-bar"><span class="pill">🎁 LUCKY DRAW</span><span class="sub">${esc(race.prize)}</span><span class="sp"></span><button class="btn small alt" onclick="raceClose()">✕ Đóng & về Admin</button></div>`;
+}
+function raceClose() { raceStopTimer(); race.active = false; race.running = false; window.STAGE_MODE = null; go("admin"); }
+function raceStopTimer() { if (race.timer) { clearInterval(race.timer); race.timer = null; } race.running = false; }
+function raceRender() {
+  const box = $("host-room"); if (!box) return;
+  const th = RACE_THEMES[race.theme] || RACE_THEMES.car;
+  if (race.finished) { raceRenderResult(box, th); return; }
+  box.innerHTML = raceBar() + `
+    <div class="card stage-center">
+      <span class="pill">${th.label} · ${race.racers.length} người tham gia</span>
+      <div class="stage-title" style="font-size:clamp(30px,5.4vw,50px)">🎁 ${esc(race.prize)}</div>
+      <p class="sub" style="font-size:16px">Ai về đích đầu tiên sẽ rinh giải này! Mỗi người có cơ hội ngang nhau — tốc độ hoàn toàn ngẫu nhiên, càng về cuối càng kịch tính 😱</p>
+      <div id="raceComment" class="race-comment">${esc(race.comment)}</div>
+      <div id="raceTrack" class="race-track theme-${race.theme}"></div>
+      <div id="raceCountNum" class="race-count hidden"></div>
+      <button class="btn stage-start" id="raceStartBtn" onclick="raceCountdown()">🏁 BẮT ĐẦU ĐUA!</button>
+      ${race.winners.length ? `<div style="margin-top:16px"><div class="sub">🏆 Đã tìm được ${race.winners.length} người thắng:</div>${race.winners.map((w2, i) => `<span class="my-chip">Giải ${i + 1}: <b>${esc(w2.prize)}</b> — ${esc(w2.name)}</span>`).join("")}</div>` : ""}
+    </div>`;
+  const track = $("raceTrack");
+  if (race.mode === "swarm") {
+    track.className = "race-swarm";
+    track.style.background = th.track;
+    track.innerHTML = `<span class="swarm-flag">🏁</span>` + race.racers.map((r, i) => `
+      <span class="token" id="racer-${i}" style="top:${6 + (i * 53) % 86}%"><i>${th.icon}</i><em class="tok-name">${esc(r.name)}</em></span>`).join("");
+    track.insertAdjacentHTML("afterend", `<div class="race-topbar" id="raceTopBar">🏆 Đang dẫn đầu: … — tổng ${race.racers.length} người đang đua</div>`);
+  } else {
+    track.innerHTML = race.racers.map((r, i) => `
+    <div class="lane" id="lane-${i}">
+      <div class="lane-fill" id="fill-${i}"></div>
+      <span class="lane-name">${esc(r.name)}</span>
+      <span class="racer" id="racer-${i}">${th.icon}</span>
+      <span class="lane-flag">🏁</span>
+    </div>`).join("");
+  }
+  racePaint();
+}
+function racePaint() {
+  if (race.mode === "swarm") {
+    const sorted = race.racers.map((r, i) => i).sort((a, b) => race.racers[b].p - race.racers[a].p);
+    const topSet = new Set(sorted.slice(0, 10));
+    race.racers.forEach((r, i) => {
+      const el = $("racer-" + i); if (!el) return;
+      el.style.left = Math.min(93, r.p) + "%";
+      el.classList.toggle("show-name", topSet.has(i));
+      el.classList.toggle("leading", race.leader === i && !race.finished);
+    });
+    const tb = $("raceTopBar");
+    if (tb) tb.innerHTML = "🏆 Đang dẫn đầu: <b>" + sorted.slice(0, 5).map(i => esc(race.racers[i].name)).join(" · ") + "</b> — tổng " + race.racers.length + " người đang đua";
+    return;
+  }
+  race.racers.forEach((r, i) => {
+    const el = $("racer-" + i), fl = $("fill-" + i), ln = $("lane-" + i);
+    if (!el) return;
+    el.style.left = "calc(" + Math.min(96, r.p) + "% - 6px)";
+    if (fl) fl.style.width = Math.min(100, r.p) + "%";
+    if (ln) ln.classList.toggle("leading", race.leader === i && !race.finished);
+  });
+}
+function raceCountdown() {
+  const btn = $("raceStartBtn"); if (btn) btn.classList.add("hidden");
+  const c = $("raceCountNum"); if (!c) { raceBegin(); return; }
+  c.classList.remove("hidden");
+  let n = 3;
+  const stepFn = () => {
+    if (n > 0) { c.textContent = n; if (typeof sfxTick === "function") sfxTick(); n--; setTimeout(stepFn, race.countStep); }
+    else { c.textContent = "ĐUA!"; if (typeof sfxJingle === "function") sfxJingle(); setTimeout(() => { c.classList.add("hidden"); raceBegin(); }, Math.min(400, race.countStep)); }
+  };
+  stepFn();
+}
+function raceBegin() {
+  raceBuildRacersKeep();
+  race.running = true; race.t0 = Date.now(); race.lastTick = Date.now();
+  raceStopTimer();
+  race.timer = setInterval(raceTick, 100);
+}
+function raceBuildRacersKeep() { race.racers.forEach(r => { r.p = 0; r.v = 0.85 + Math.random() * 0.3; r.boost = 0; r.done = false; }); race.order = []; race.winner = null; race.finished = false; race.lastLeader = null; }
+function raceTick() {
+  const now = Date.now();
+  const dt = Math.min(0.25, (now - (race.lastTick || now)) / 1000); race.lastTick = now;
+  const target = race.dur / Math.max(0.2, race.pace);
+  const elapsed = (now - race.t0) / 1000;
+  const lead = Math.max(...race.racers.map(x => x.p));
+  let leader = 0;
+  race.racers.forEach((r, i) => {
+    if (r.done) return;
+    if (r.boost > 0) r.boost -= dt;
+    r.v += (Math.random() - 0.5) * 0.24;
+    if (Math.random() < 0.014) { r.boost = 1.4; r.v += 0.55; race.comment = "⚡ " + r.name + " bất ngờ tăng tốc!"; }
+    else if (Math.random() < 0.009) { r.v *= 0.5; race.comment = "😬 Ôi! " + r.name + " vừa hụt một nhịp…"; }
+    r.v = Math.max(0.35, Math.min(elapsed < target * 0.7 ? 1.55 : 2.3, r.v));
+    const rubber = r.p < lead ? 1 + Math.min(0.3, (lead - r.p) / 150) : 0.97;
+    r.p += (100 / target) * r.v * rubber * dt;
+    if (r.p > race.racers[leader].p) leader = i;
+    if (r.p >= 100 && !r.done) { r.done = true; r.p = 100; race.order.push(i); }
+  });
+  race.leader = leader;
+  const leadR = race.racers[leader];
+  if (race.lastLeader !== leader && elapsed > 1.2) { race.comment = "🔥 " + leadR.name + " vươn lên dẫn đầu!"; race.lastLeader = leader; if (typeof sfxPop === "function") sfxPop(); }
+  const sorted = race.racers.map((r, i) => i).sort((a, b) => race.racers[b].p - race.racers[a].p);
+  if (sorted.length > 1 && race.racers[sorted[0]].p > 82 && race.racers[sorted[0]].p - race.racers[sorted[1]].p < 6) race.comment = "😱 Sát nút ở vạch đích! " + race.racers[sorted[0]].name + " và " + race.racers[sorted[1]].name + " đang kề vai nhau!";
+  const cm = $("raceComment"); if (cm && cm.textContent !== race.comment) cm.textContent = race.comment;
+  racePaint();
+  if (race.order.length) {
+    race.winner = race.racers[race.order[0]].name;
+    raceStopTimer();
+    setTimeout(raceFinish, 650);
+  } else if (elapsed > target * 2.4) {
+    const idx = race.racers.map((r, i) => i).sort((a, b) => race.racers[b].p - race.racers[a].p);
+    race.order = idx; race.winner = race.racers[idx[0]].name;
+    raceStopTimer();
+    raceFinish();
+  }
+}
+function raceFinish() {
+  if (race.finished) return;
+  race.finished = true; race.running = false;
+  race.racers.forEach((r, i) => { if (!race.order.includes(i)) race.order.push(i); });
+  race.order.sort((a, b) => (race.racers[a].done === race.racers[b].done ? race.racers[b].p - race.racers[a].p : race.racers[a].done ? -1 : 1));
+  race.winners.push({ prize: race.prize, name: race.winner });
+  if (typeof sfxVictory === "function") sfxVictory();
+  raceRender();
+  confettiBurst();
+}
+function raceRenderResult(box, th) {
+  const top = race.order.slice(0, 3).map(i => race.racers[i]);
+  const restNames = race.allNames.filter(n => !race.winners.some(w2 => w2.name === n));
+  box.innerHTML = raceBar() + `
+    <div class="card stage-center">
+      <span class="pill">${th.label} · KẾT QUẢ</span>
+      <div style="font-size:64px;margin-top:8px">🏆</div>
+      <div class="sub" style="font-size:18px">${esc(race.prize)} thuộc về</div>
+      <div class="stage-title" style="font-size:clamp(38px,7vw,64px)">${esc(race.winner)}</div>
+      <div style="margin:8px 0">${top.map((r, i) => `<span class="my-chip" style="font-size:16px">${["🥇", "🥈", "🥉"][i]} ${esc(r.name)}</span>`).join("")}</div>
+      <div class="sub">Thứ tự về đích: ${race.order.map((ri, i) => (i + 1) + ". " + esc(race.racers[ri].name)).join(" · ")}</div>
+      <div class="hostbar" style="max-width:760px;margin-left:auto;margin-right:auto">
+        ${restNames.length >= 2 ? `<button class="btn" onclick="raceNextPrize()">🎁 Đua tiếp — tìm giải nữa (loại ${race.winners.length} người đã thắng)</button>` : ""}
+        <button class="btn alt" onclick="raceAgain()">🔁 Đua lại danh sách gốc</button>
+        <button class="btn alt" onclick="raceClose()">Về Admin nhập danh sách mới</button>
+      </div>
+      <div style="margin-top:14px"><div class="sub">🏆 Danh sách người thắng:</div>${race.winners.map((w2, i) => `<span class="my-chip">${i + 1}. <b>${esc(w2.prize)}</b> — ${esc(w2.name)}</span>`).join("")}</div>
+    </div>
+    <div id="confettiBox"></div>`;
+}
+function raceNextPrize() {
+  const rest = race.allNames.filter(n => !race.winners.some(w2 => w2.name === n));
+  race.names = rest;
+  const np = prompt("Tên giải tiếp theo:", "Giải tiếp theo");
+  if (np !== null && np.trim()) race.prize = np.trim();
+  raceBuildRacers();
+  raceRender();
+}
+function raceAgain() { race.names = race.allNames.slice(); race.winners = []; raceBuildRacers(); raceRender(); }
+function confettiBurst() {
+  const box = $("confettiBox"); if (!box) return;
+  const colors = ["#E21B3C", "#1368CE", "#E8930C", "#26890C", "#7B2FF7", "#FF5D8F"];
+  let s = "";
+  for (let i = 0; i < 90; i++) {
+    const l = Math.random() * 100, d = (Math.random() * 0.9).toFixed(2), dur = (2.4 + Math.random() * 1.6).toFixed(2), sz = 7 + Math.round(Math.random() * 8), rot = Math.round(Math.random() * 360);
+    s += `<i class="confetti" style="left:${l}%;background:${colors[i % colors.length]};width:${sz}px;height:${sz * 0.5}px;animation-delay:${d}s;animation-duration:${dur}s;--rot:${rot}deg"></i>`;
+  }
+  box.innerHTML = s;
+  setTimeout(() => { box.innerHTML = ""; }, 4800);
+}
+</script>
+
+
+<script>
+/* ================= LUCKY DRAW: ĐIỀU PHỐI HÌNH THỨC ================= */
+function ldFormatChange() {
+  const f = $("ldFormat") ? $("ldFormat").value : "race";
+  const race = $("ldRaceOpts"), slot = $("ldSlotOpts"), names = $("ldNamesBlock"), btn = $("ldStartBtn");
+  if (race) race.classList.toggle("hidden", f !== "race");
+  if (slot) slot.classList.toggle("hidden", f !== "slot");
+  if (names) names.classList.toggle("hidden", f === "slot");
+  if (btn) btn.textContent = f === "race" ? "🏁 Mở màn hình đua" : f === "wheel" ? "🎡 Mở vòng quay" : "🎰 Mở màn hình quay";
+}
+function ldStart() {
+  const f = $("ldFormat") ? $("ldFormat").value : "race";
+  if (f === "wheel") wheelSetup();
+  else if (f === "slot") slotSetup();
+  else raceSetup();
+}
+
+/* ================= VÒNG QUAY MAY MẮN ================= */
+const WHEEL_COLORS = ["#E21B3C", "#1368CE", "#E8930C", "#26890C", "#7B2FF7", "#FF5D8F", "#00A3C7", "#F2C230", "#5B8C5A", "#D35400"];
+let wheel = { active: false, names: [], allNames: [], winners: [], prize: "", angle: 0, spinning: false, winner: null, spinMs: 7200, lastTickIdx: -1 };
+window.WHEEL = wheel;
+window.WHEEL_Render = () => wheelRender();
+function wheelSetup() {
+  const names = raceParseNames();
+  if (names.length < 2) { alert("Vòng quay cần ít nhất 2 người. Bạn nhập thêm danh sách nhé!"); return; }
+  wheel.names = names.slice(); wheel.allNames = names.slice(); wheel.winners = [];
+  wheel.prize = $("racePrize").value.trim() || "Giải may mắn";
+  wheel.angle = 0; wheel.winner = null; wheel.spinning = false; wheel.active = true;
+  window.STAGE_MODE = "wheel";
+  go("stage");
+}
+function wheelBar() {
+  return `<div class="stage-bar"><span class="pill">🎡 VÒNG QUAY MAY MẮN</span><span class="sub">${esc(wheel.prize)} · ${wheel.names.length} người</span><span class="sp"></span><button class="btn small alt" onclick="wheelClose()">✕ Đóng & về Admin</button></div>`;
+}
+function wheelClose() { wheel.active = false; wheel.spinning = false; window.STAGE_MODE = null; go("admin"); }
+function wheelRender() {
+  const box = $("host-room"); if (!box) return;
+  box.innerHTML = wheelBar() + `
+    <div class="card stage-center">
+      <span class="pill">🎁 ${esc(wheel.prize)}</span>
+      <div class="stage-title" style="font-size:clamp(30px,5.4vw,48px)">Vòng quay may mắn</div>
+      <div class="wheel-wrap">
+        <div class="wheel-pointer">▼</div>
+        <canvas id="wheelCanvas" width="680" height="680"></canvas>
+        <div class="wheel-hub">🎡</div>
+      </div>
+      <div><button class="btn stage-start" id="wheelSpinBtn" onclick="wheelSpin()">🎡 QUAY THÔI!</button></div>
+      <div id="wheelResult" style="margin-top:14px"></div>
+      ${wheel.winners.length ? `<div style="margin-top:10px"><div class="sub">🏆 Đã quay được ${wheel.winners.length} giải:</div>${wheel.winners.map((w2, i) => `<span class="my-chip">${i + 1}. <b>${esc(w2.prize)}</b> — ${esc(w2.name)}</span>`).join("")}</div>` : ""}
+    </div>
+    <div id="confettiBox"></div>`;
+  drawWheel();
+}
+function drawWheel() {
+  const cv = $("wheelCanvas"); if (!cv) return;
+  let ctx = null;
+  try { ctx = cv.getContext("2d"); } catch (e) {}
+  if (!ctx) return;
+  const n = wheel.names.length, R = 330, cx = 340, cy = 340, step = (Math.PI * 2) / n;
+  ctx.clearRect(0, 0, 680, 680);
+  ctx.beginPath(); ctx.arc(cx, cy, R + 8, 0, Math.PI * 2); ctx.fillStyle = "#46178F"; ctx.fill();
+  const fs = Math.max(10, Math.min(19, Math.floor(560 / Math.max(6, n))));
+  for (let i = 0; i < n; i++) {
+    const a0 = wheel.angle + i * step, a1 = a0 + step;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R, a0, a1); ctx.closePath();
+    ctx.fillStyle = WHEEL_COLORS[i % WHEEL_COLORS.length]; ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(a0 + step / 2);
+    ctx.textAlign = "right"; ctx.fillStyle = "#fff"; ctx.font = "800 " + fs + "px 'Be Vietnam Pro',sans-serif";
+    let label = wheel.names[i]; if (label.length > 18) label = label.slice(0, 17) + "…";
+    ctx.fillText(label, R - 16, fs / 3);
+    ctx.restore();
+  }
+  ctx.beginPath(); ctx.arc(cx, cy, 52, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill();
+  ctx.lineWidth = 5; ctx.strokeStyle = "#46178F"; ctx.stroke();
+}
+function wheelSpin() {
+  if (wheel.spinning || wheel.names.length < 2) return;
+  wheel.spinning = true; wheel.winner = null;
+  const res = $("wheelResult"); if (res) res.innerHTML = "";
+  const btn = $("wheelSpinBtn"); if (btn) btn.classList.add("hidden");
+  const n = wheel.names.length, step = (Math.PI * 2) / n;
+  const winIdx = Math.floor(Math.random() * n);
+  const pointer = -Math.PI / 2;
+  const targetCenter = pointer - (winIdx + 0.5) * step;
+  const cur = wheel.angle % (Math.PI * 2);
+  let delta = (targetCenter - cur) % (Math.PI * 2); if (delta < 0) delta += Math.PI * 2;
+  const total = Math.PI * 2 * 6 + delta;
+  const start = wheel.angle, t0 = performance.now(), dur = wheel.spinMs;
+  wheel.lastTickIdx = Math.floor(wheel.angle / step);
+  const frame = now => {
+    const t = Math.min(1, (now - t0) / dur);
+    const e = 1 - Math.pow(1 - t, 5);
+    wheel.angle = start + total * e;
+    drawWheel();
+    const idx = Math.floor(wheel.angle / step);
+    if (idx !== wheel.lastTickIdx) { wheel.lastTickIdx = idx; if (typeof sfxTick === "function") sfxTick(); }
+    if (t < 1) requestAnimationFrame(frame);
+    else {
+      wheel.angle = start + total;
+      drawWheel();
+      wheel.spinning = false;
+      wheel.winner = wheel.names[winIdx];
+      wheel.winners.push({ prize: wheel.prize, name: wheel.winner });
+      if (typeof sfxVictory === "function") sfxVictory();
+      wheelShowResult();
+      if (typeof confettiBurst === "function") confettiBurst();
+    }
+  };
+  requestAnimationFrame(frame);
+}
+function wheelShowResult() {
+  const res = $("wheelResult"); if (!res) return;
+  const rest = wheel.allNames.filter(nm => !wheel.winners.some(w2 => w2.name === nm));
+  res.innerHTML = `
+    <div style="font-size:44px">🎉</div>
+    <div class="sub" style="font-size:17px">${esc(wheel.prize)} thuộc về</div>
+    <div class="stage-title" style="margin:2px 0 8px">${esc(wheel.winner)}</div>
+    <div class="hostbar" style="max-width:720px;margin-left:auto;margin-right:auto">
+      ${rest.length >= 2 ? `<button class="btn" onclick="wheelNext()">🎡 Quay tiếp — loại người vừa thắng (${rest.length} người còn lại)</button>` : ""}
+      <button class="btn alt" onclick="wheelAgain()">🔁 Quay lại từ danh sách gốc</button>
+      <button class="btn alt" onclick="wheelClose()">Về Admin</button>
+    </div>`;
+  const btn = $("wheelSpinBtn"); if (btn && rest.length < 2) btn.classList.add("hidden");
+}
+function wheelNext() {
+  wheel.names = wheel.allNames.filter(nm => !wheel.winners.some(w2 => w2.name === nm));
+  const np = prompt("Tên giải tiếp theo:", "Giải tiếp theo");
+  if (np !== null && np.trim()) wheel.prize = np.trim();
+  wheel.winner = null; wheelRender();
+}
+function wheelAgain() { wheel.names = wheel.allNames.slice(); wheel.winners = []; wheel.winner = null; wheelRender(); }
+
+/* ================= QUAY CHỮ / SỐ ================= */
+const SLOT_SETS = {
+  digits: "0123456789",
+  letters: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  both: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+};
+let slot = { active: false, len: 4, charset: "digits", prize: "", result: "", history: [], spinning: false, pace: 1 };
+window.SLOT = slot;
+window.SLOT_Render = () => slotRender();
+function slotSetup() {
+  slot.len = Math.max(1, Math.min(12, parseInt($("slotLen").value, 10) || 4));
+  slot.charset = $("slotCharset").value || "digits";
+  slot.prize = $("racePrize").value.trim() || "Giải may mắn";
+  slot.result = ""; slot.history = []; slot.spinning = false; slot.active = true;
+  window.STAGE_MODE = "slot";
+  go("stage");
+}
+function slotBar() {
+  return `<div class="stage-bar"><span class="pill">🎰 QUAY CHỮ/SỐ</span><span class="sub">${esc(slot.prize)}</span><span class="sp"></span><button class="btn small alt" onclick="slotClose()">✕ Đóng & về Admin</button></div>`;
+}
+function slotClose() { slot.active = false; slot.spinning = false; window.STAGE_MODE = null; go("admin"); }
+function slotRender() {
+  const box = $("host-room"); if (!box) return;
+  const setLabel = slot.charset === "digits" ? "chỉ số 0–9" : slot.charset === "letters" ? "chỉ chữ A–Z" : "số + chữ";
+  box.innerHTML = slotBar() + `
+    <div class="card stage-center">
+      <span class="pill">🎁 ${esc(slot.prize)} · ${slot.len} ký tự · ${setLabel}</span>
+      <div class="stage-title" style="font-size:clamp(30px,5.4vw,48px)">Quay chữ / số may mắn</div>
+      <div class="slot-row">${Array.from({ length: slot.len }, (_, i) => `<span class="slot-reel" id="reel-${i}">${slot.result ? esc(slot.result[i] || "?") : "?"}</span>`).join("")}</div>
+      <div id="slotResult">${slot.result ? `<div class="sub" style="font-size:18px">Kết quả: <b style="color:var(--purple);font-size:24px">${esc(slot.result)}</b> — ai đang giữ mã này thì lên nhận giải nhé! 🎉</div>` : `<div class="sub">Bấm QUAY để các ký tự chạy và dừng lại lần lượt…</div>`}</div>
+      <button class="btn stage-start" id="slotSpinBtn" onclick="slotSpin()">🎰 QUAY THÔI!</button>
+      ${slot.history.length ? `<div style="margin-top:14px"><div class="sub">Các kết quả đã quay:</div>${slot.history.map(h => `<span class="my-chip" style="font-size:16px;letter-spacing:2px"><b>${esc(h)}</b></span>`).join("")}</div>` : ""}
+    </div>
+    <div id="confettiBox"></div>`;
+}
+function slotSpin() {
+  if (slot.spinning) return;
+  slot.spinning = true; slot.result = "";
+  const btn = $("slotSpinBtn"); if (btn) btn.classList.add("hidden");
+  const chars = SLOT_SETS[slot.charset] || SLOT_SETS.digits;
+  const finals = Array.from({ length: slot.len }, () => chars[Math.floor(Math.random() * chars.length)]);
+  const pace = Math.max(0.2, slot.pace || 1);
+  let stopped = 0;
+  for (let i = 0; i < slot.len; i++) {
+    const el = $("reel-" + i);
+    if (el) el.classList.remove("stopped");
+    const iv = setInterval(() => { const e2 = $("reel-" + i); if (e2) e2.textContent = chars[Math.floor(Math.random() * chars.length)]; }, 50);
+    setTimeout(() => {
+      clearInterval(iv);
+      const e3 = $("reel-" + i);
+      if (e3) { e3.textContent = finals[i]; e3.classList.add("stopped"); }
+      if (typeof sfxPop === "function") sfxPop();
+      stopped++;
+      if (stopped === slot.len) {
+        slot.result = finals.join("");
+        slot.history.unshift(slot.result);
+        slot.spinning = false;
+        if (typeof sfxVictory === "function") sfxVictory();
+        slotRender();
+        if (typeof confettiBurst === "function") confettiBurst();
+      }
+    }, (850 + i * 780) / pace);
+  }
 }
 </script>
 
