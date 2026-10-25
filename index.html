@@ -183,6 +183,38 @@ body.joinmode nav.tabs{display:none!important}
 #qrModal{position:fixed;inset:0;background:rgba(34,8,74,.9);z-index:60;display:flex;align-items:center;justify-content:center;padding:18px}
 #qrModal .qr-card{background:#fff;border-radius:28px;padding:28px 30px;text-align:center;max-width:94vw;box-shadow:0 30px 80px rgba(0,0,0,.45);animation:rise .28s ease both}
 #qrModal img{width:min(70vmin,540px);height:auto;display:block;margin:10px auto 4px}
+/* ==== Màu phân loại từng chế độ chơi (khu Admin) ==== */
+.mode-tag{display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:1.2px;color:#fff;border-radius:999px;padding:4px 12px;margin-bottom:9px;text-transform:uppercase}
+.card.mode-quiz{border-top:10px solid #7B2FF7}
+.card.mode-quiz h2{color:#7B2FF7}
+.card.mode-quiz .mode-tag{background:#7B2FF7}
+.card.mode-quiz .btn:not(.alt):not(.danger){background:#7B2FF7;box-shadow:0 6px 0 #4C1D95}
+.card.mode-cloud{border-top:10px solid #00B8E6}
+.card.mode-cloud h2{color:#0284C7}
+.card.mode-cloud .mode-tag{background:#0284C7}
+.card.mode-cloud .btn:not(.alt):not(.danger){background:#0284C7;box-shadow:0 6px 0 #075985}
+.card.mode-vote{border-top:10px solid #FF5D8F}
+.card.mode-vote h2{color:#DB2777}
+.card.mode-vote .mode-tag{background:#DB2777}
+.card.mode-vote .btn:not(.alt):not(.danger){background:#DB2777;box-shadow:0 6px 0 #9D174D}
+.card.mode-lucky{border-top:10px solid #FFA602}
+.card.mode-lucky h2{color:#D97706}
+.card.mode-lucky .mode-tag{background:#D97706}
+.card.mode-lucky .btn:not(.alt):not(.danger){background:#D97706;box-shadow:0 6px 0 #92400E}
+/* ==== Người chơi: banner thứ hạng sau mỗi câu ==== */
+.rank-banner{margin:16px auto 2px;max-width:520px;border-radius:16px;padding:13px 18px;font-weight:700;font-size:16px;background:var(--soft);border:2px solid var(--line)}
+.rank-banner .rk{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-size:22px;color:var(--purple)}
+.rank-banner.first{background:linear-gradient(135deg,#FFF3C4,#FFE97A);border-color:#FFC93C;color:#7A4A00;animation:pulse .6s ease 2}
+/* ==== Sân khấu vinh danh từng giải (podium) khi kết thúc ván ==== */
+.pod-reveal{display:flex;flex-direction:column;align-items:center;gap:12px;margin:20px 0 8px}
+.pod-card{border-radius:20px;padding:16px 34px;text-align:center;min-width:min(430px,84vw);border:3px solid #fff;box-shadow:0 14px 34px rgba(70,23,143,.15);animation:rise .5s ease both}
+.pod-card .pr{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;font-size:18px;letter-spacing:1px}
+.pod-card .pn{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;font-size:clamp(28px,5vw,42px);line-height:1.15;word-break:break-word}
+.pod-card .ps{font-weight:800;font-size:17px;color:var(--purple2)}
+.pod-card.r3{background:linear-gradient(135deg,#FFE3C2,#FFC38B)}
+.pod-card.r2{background:linear-gradient(135deg,#F8FAFC,#D7E0EC)}
+.pod-card.r1{background:linear-gradient(135deg,#FFF3C4,#FFD93C);animation:pulse .6s ease 3}
+.pod-wait{font-size:19px;color:var(--mut);font-weight:700;animation:pulse 1s ease-in-out infinite}
 </style>
 </head>
 <body>
@@ -246,40 +278,6 @@ body.joinmode nav.tabs{display:none!important}
         <div><span class="pill">👋 Xin chào Admin! Bạn đang ở khu điều khiển trò chơi.</span></div>
         <div class="fix"><button class="btn small alt" onclick="adminLogout()">Đăng xuất</button></div>
       </div>
-      <div id="host-active" class="card hidden" style="background:var(--soft)"></div>
-      <div id="host-create" class="card">
-        <h2>🎤 Mở phòng chơi mới (màn hình MC)</h2>
-        <div class="sub">Chọn một bộ câu hỏi thật hay, đặt tên phòng rồi bấm mở phòng. Mọi người quét mã QR là vào ngay!</div>
-        <label>Bộ câu hỏi</label>
-        <select id="hostSetPick" class="setpick"></select>
-        <label>Tên phòng chơi</label>
-        <input type="text" id="hostRoomName" value="Đố Vui Online">
-        <div style="margin-top:16px"><button class="btn" onclick="hostCreateRoom()">🚀 Mở phòng & rủ mọi người vào</button></div>
-        <div class="sub" style="margin-top:10px">Chưa ưng bộ câu hỏi nào? <a href="#" onclick="go('admin');setTimeout(()=>{var e=document.getElementById('admin-qpanel');if(e)e.scrollIntoView({behavior:'smooth'})},80);return false;">Tự tạo / nhập từ Excel ở phần dưới →</a></div>
-      </div>
-      <div id="cloud-create" class="card">
-        <h2>☁️ Đám mây chữ — trả lời tự do</h2>
-        <div class="sub">Admin đặt 1 câu hỏi mở, mọi người quét QR vào trả lời bằng vài từ ngắn — <b>không cần nhập tên</b>. Các từ sẽ hiện lên màn hình lớn của Admin thành một đám mây chữ: từ nào được nhiều người nhắc tới sẽ to dần lên.</div>
-        <label>Câu hỏi cho mọi người</label>
-        <input type="text" id="cloudPrompt" value="Cảm giác của anh chị lúc này thế nào?">
-        <label>Mỗi câu trả lời tối đa</label>
-        <select id="cloudMaxWords"><option value="3">3 từ</option><option value="5" selected>5 từ</option><option value="10">10 từ</option></select>
-        <div style="margin-top:16px"><button class="btn" onclick="cloudCreateRoom()">☁️ Mở phòng đám mây chữ</button></div>
-      </div>
-      <div id="vote-create" class="card">
-        <h2>🗳️ Bình chọn — Vote trực tiếp</h2>
-        <div class="sub">Admin đặt câu hỏi và các lựa chọn, mọi người quét QR vào chọn trên điện thoại — <b>không cần nhập tên</b>. Kết quả hiện trực tiếp trên màn hình chiếu theo % phiếu.</div>
-        <label>Câu hỏi bình chọn</label>
-        <input type="text" id="voteQuestion" value="Anh chị thấy buổi hôm nay thế nào?">
-        <label>Các lựa chọn (mỗi dòng 1 lựa chọn, tối đa 12)</label>
-        <textarea id="voteOptions" rows="4" placeholder="Rất hay&#10;Hay&#10;Bình thường&#10;Cần cải thiện">Rất hay
-Hay
-Bình thường
-Cần cải thiện</textarea>
-        <label>Mỗi người được chọn tối đa (nhập tay)</label>
-        <input type="number" id="voteMax" value="1" min="1" max="12" step="1">
-        <div style="margin-top:14px"><button class="btn" onclick="voteCreateRoom()">🗳️ Mở phòng bình chọn</button></div>
-      </div>
       <div class="card" id="audio-panel">
         <h2>🎵 Nhạc &amp; hiệu ứng âm thanh</h2>
         <div class="sub">Trang đã có sẵn bộ nhạc hiệu (bắt đầu câu hỏi, tích tắc đếm ngược, hết giờ, công bố đáp án, vinh danh, tiếng vỗ tay…). Nhạc nền thì Admin tự tải file nhạc của mình lên — file lưu ngay trên máy này nên lần sau mở trang vẫn còn, phát trên máy đang chiếu.</div>
@@ -302,7 +300,45 @@ Cần cải thiện</textarea>
         </div>
         <div class="sub">Nhạc nền tự phát khi mở phòng (ở sảnh chờ) và tự nhỏ xuống 40% khi đang chạy câu hỏi để không át tiếng MC. Trên màn hình chiếu cũng có nút bật/tắt nhạc và thanh chỉnh âm lượng nhanh.</div>
       </div>
-      <div class="card" id="race-create">
+      <div id="host-active" class="card hidden" style="background:var(--soft)"></div>
+      <div id="host-create" class="card mode-quiz">
+        <span class="mode-tag">Trắc nghiệm</span>
+        <h2>🎤 Mở phòng chơi mới (màn hình MC)</h2>
+        <div class="sub">Chọn một bộ câu hỏi thật hay, đặt tên phòng rồi bấm mở phòng. Mọi người quét mã QR là vào ngay!</div>
+        <label>Bộ câu hỏi</label>
+        <select id="hostSetPick" class="setpick"></select>
+        <label>Tên phòng chơi</label>
+        <input type="text" id="hostRoomName" value="Đố Vui Online">
+        <div style="margin-top:16px"><button class="btn" onclick="hostCreateRoom()">🚀 Mở phòng & rủ mọi người vào</button></div>
+        <div class="sub" style="margin-top:10px">Chưa ưng bộ câu hỏi nào? <a href="#" onclick="go('admin');setTimeout(()=>{var e=document.getElementById('admin-qpanel');if(e)e.scrollIntoView({behavior:'smooth'})},80);return false;">Tự tạo / nhập từ Excel ở phần dưới →</a></div>
+      </div>
+      <div id="cloud-create" class="card mode-cloud">
+        <span class="mode-tag">Đám mây chữ</span>
+        <h2>☁️ Đám mây chữ — trả lời tự do</h2>
+        <div class="sub">Admin đặt 1 câu hỏi mở, mọi người quét QR vào trả lời bằng vài từ ngắn — <b>không cần nhập tên</b>. Các từ sẽ hiện lên màn hình lớn của Admin thành một đám mây chữ: từ nào được nhiều người nhắc tới sẽ to dần lên.</div>
+        <label>Câu hỏi cho mọi người</label>
+        <input type="text" id="cloudPrompt" value="Cảm giác của anh chị lúc này thế nào?">
+        <label>Mỗi câu trả lời tối đa</label>
+        <select id="cloudMaxWords"><option value="3">3 từ</option><option value="5" selected>5 từ</option><option value="10">10 từ</option></select>
+        <div style="margin-top:16px"><button class="btn" onclick="cloudCreateRoom()">☁️ Mở phòng đám mây chữ</button></div>
+      </div>
+      <div id="vote-create" class="card mode-vote">
+        <span class="mode-tag">Bình chọn</span>
+        <h2>🗳️ Bình chọn — Vote trực tiếp</h2>
+        <div class="sub">Admin đặt câu hỏi và các lựa chọn, mọi người quét QR vào chọn trên điện thoại — <b>không cần nhập tên</b>. Kết quả hiện trực tiếp trên màn hình chiếu theo % phiếu.</div>
+        <label>Câu hỏi bình chọn</label>
+        <input type="text" id="voteQuestion" value="Anh chị thấy buổi hôm nay thế nào?">
+        <label>Các lựa chọn (mỗi dòng 1 lựa chọn, tối đa 12)</label>
+        <textarea id="voteOptions" rows="4" placeholder="Rất hay&#10;Hay&#10;Bình thường&#10;Cần cải thiện">Rất hay
+Hay
+Bình thường
+Cần cải thiện</textarea>
+        <label>Mỗi người được chọn tối đa (nhập tay)</label>
+        <input type="number" id="voteMax" value="1" min="1" max="12" step="1">
+        <div style="margin-top:14px"><button class="btn" onclick="voteCreateRoom()">🗳️ Mở phòng bình chọn</button></div>
+      </div>
+      <div class="card mode-lucky" id="race-create">
+        <span class="mode-tag">Lucky Draw</span>
         <h2>🎁 Lucky Draw — Quay thưởng may mắn</h2>
         <div class="sub">Ba hình thức quay thưởng chiếu lên màn hình lớn: cuộc đua về đích, vòng quay may mắn và quay chữ/số tìm mã trúng thưởng. Mọi người chỉ xem và cổ vũ — không cần dùng điện thoại.</div>
         <label>Tên giải thưởng</label>
@@ -588,6 +624,7 @@ function hostRender() {
   if (!room) { box.innerHTML = stageBar() + "<div class='card center'><h2>Phòng đã đóng rồi</h2><p class='sub'>Bấm nút bên dưới để về khu Admin mở phòng mới nhé.</p><button class='btn' onclick='hostReset(true)'>← Về khu Admin</button></div>"; return; }
   if (room.type === "cloud") { cloudHostRender(room); return; }
   if (room.type === "vote") { voteHostRender(room); return; }
+  if (room.status !== "finished") podClear();
   const players = room.players || {}, pCount = Object.keys(players).length;
   const top = ranked(players).slice(0, 10);
   let body = "";
@@ -634,7 +671,7 @@ function hostRender() {
       });
     }, 0);
   } else if (room.status === "finished") {
-    body = `<div class="card"><h2 class="center">🏁 Hết ván rồi — chúc mừng nhà vô địch!</h2>${podiumHtml(top)}${lbHtml(top)}<div class="hostbar"><button class="btn alt" onclick="hostReset(false)">↺ Chơi ván mới</button></div></div>`;
+    body = podSequenceHtml(top);
   }
   box.innerHTML = stageBar() + body;
 }
@@ -669,7 +706,40 @@ async function hostStartQ(idx) {
 async function hostReveal() { await DB.update("rooms/" + host.code, { status: "revealed" }); }
 async function hostFinish() { await DB.update("rooms/" + host.code, { status: "finished" }); hostShowTopSoon(); }
 function hostShowTopSoon() { setTimeout(hostShowTop, 350); }
+/* ---- Sân khấu vinh danh từng giải khi kết thúc ván (kiểu Kahoot: GIẢI BA → GIẢI NHÌ → GIẢI NHẤT, rồi mới hiện TOP 10) ---- */
+function podStepsFor(top) { const s = []; if (top[2]) s.push(3); if (top[1]) s.push(2); if (top[0]) s.push(1); return s; }
+function podClear() { if (host.pod) { host.pod.timers.forEach(t => clearTimeout(t)); host.pod = null; } }
+function podEnsure(top) {
+  const key = (host.code || "") + "|" + ((host.room && host.room.createdAt) || "");
+  if (host.pod && host.pod.key === key) return;
+  podClear();
+  const pod = host.pod = { key, steps: podStepsFor(top), shown: 0, done: false, timers: [] };
+  const tick = () => {
+    if (host.pod !== pod) return;
+    if (pod.shown < pod.steps.length) {
+      const r = pod.steps[pod.shown]; pod.shown++;
+      if (r === 1) { if (typeof sfxVictory === "function") sfxVictory(); if (typeof confettiBurst === "function") confettiBurst(); }
+      else if (typeof sfxReveal === "function") sfxReveal();
+      hostRender();
+      pod.timers.push(setTimeout(tick, r === 1 ? 2600 : 1800));
+    } else { pod.done = true; hostRender(); }
+  };
+  pod.timers.push(setTimeout(tick, 900));
+}
+function podSequenceHtml(top) {
+  podEnsure(top);
+  const pod = host.pod;
+  if (pod.done) return `<div class="card"><h2 class="center">🏁 Hết ván rồi — chúc mừng nhà vô địch!</h2><div class="pod-final">${podiumHtml(top)}${lbHtml(top)}</div><div class="hostbar"><button class="btn alt" onclick="hostReset(false)">↺ Chơi ván mới</button></div></div>`;
+  const cards = pod.steps.slice(0, pod.shown).map(r => {
+    const p = top[r - 1];
+    const medal = r === 1 ? "👑" : r === 2 ? "🥈" : "🥉";
+    const label = r === 1 ? "GIẢI NHẤT" : r === 2 ? "GIẢI NHÌ" : "GIẢI BA";
+    return `<div class="pod-card r${r}" data-rank="${r}"><div class="pr">${medal} ${label}</div><div class="pn">${esc(p.name)}</div><div class="ps">${p.total} điểm · Đúng ${p.correct} câu</div></div>`;
+  }).join("");
+  return `<div class="card stage-center"><h2 class="center">🏁 Hết ván rồi — công bố kết quả!</h2><div class="pod-reveal">${cards || `<div class="pod-wait">🥁 Đang hồi hộp chờ công bố…</div>`}</div><p class="sub">Đang vinh danh từng giải một — bảng TOP 10 đầy đủ sẽ hiện ngay sau khi công bố giải nhất…</p></div>`;
+}
 async function hostReset(backToCreate) {
+  podClear();
   if (host.code) await DB.remove("rooms/" + host.code);
   host = { code: null, room: null };
   $("host-room").innerHTML = "";
@@ -750,9 +820,14 @@ function playerRender() {
   } else if (room.status === "revealed") {
     const q = room.questions[room.qIndex];
     const myAns = player.answers && player.answers[room.qIndex];
-    if (!myAns) body = `<div class="card center"><div class="big-result">⏰ Hết giờ mất rồi!</div><p class="sub">Câu này bạn chưa kịp chọn đáp án. Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p class="sub">Đừng buồn, còn nhiều câu hay phía sau đang chờ bạn!</p></div>`;
-    else if (myAns.correct) body = `<div class="card center"><div class="big-result" style="color:var(--ok)">🎉 Đúng rồi, giỏi quá!</div><p class="sub">Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p style="font-size:19px">+ <b style="color:var(--purple2)">${myAns.points} điểm</b> câu này · Tổng: <b>${mine.total} điểm</b></p></div>`;
-    else body = `<div class="card center"><div class="big-result" style="color:var(--bad)">🥹 Tiếc quá, chưa đúng rồi</div><p class="sub">Bạn chọn <b>${LETTERS[myAns.choice]}. ${esc(q.a[myAns.choice])}</b> · Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p class="sub">Tổng điểm hiện tại: <b>${mine.total}</b> — cố lên ở câu sau nhé!</p></div>`;
+    const allRank = ranked(room.players || {});
+    const myIdx = allRank.findIndex(p => p.pid === me.pid);
+    let rankHtml = "";
+    if (myIdx === 0) rankHtml = `<div class="rank-banner first">👑 <span class="rk">Bạn đang dẫn đầu!</span><div class="sub" style="color:#7A4A00">Bạn đang đứng hạng 1 toàn phòng — giữ vững phong độ ở câu sau nhé!</div></div>`;
+    else if (myIdx > 0) { const ab = allRank[myIdx - 1]; const gap = ab.total - mine.total; rankHtml = `<div class="rank-banner">🏅 Bạn đang <span class="rk">hạng ${myIdx + 1}</span><div class="sub">Ngay trên bạn là <b>${esc(ab.name)}</b> · ${ab.total} điểm${gap > 0 ? ` — chỉ hơn bạn ${gap} điểm thôi, cố lên nào!` : " — đang bằng điểm với bạn đó!"}</div></div>`; }
+    if (!myAns) body = `<div class="card center"><div class="big-result">⏰ Hết giờ mất rồi!</div><p class="sub">Câu này bạn chưa kịp chọn đáp án. Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p class="sub">Đừng buồn, còn nhiều câu hay phía sau đang chờ bạn!</p>${rankHtml}</div>`;
+    else if (myAns.correct) body = `<div class="card center"><div class="big-result" style="color:var(--ok)">🎉 Đúng rồi, giỏi quá!</div><p class="sub">Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p style="font-size:19px">+ <b style="color:var(--purple2)">${myAns.points} điểm</b> câu này · Tổng: <b>${mine.total} điểm</b></p>${rankHtml}</div>`;
+    else body = `<div class="card center"><div class="big-result" style="color:var(--bad)">🥹 Tiếc quá, chưa đúng rồi</div><p class="sub">Bạn chọn <b>${LETTERS[myAns.choice]}. ${esc(q.a[myAns.choice])}</b> · Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p class="sub">Tổng điểm hiện tại: <b>${mine.total}</b> — cố lên ở câu sau nhé!</p>${rankHtml}</div>`;
   } else if (room.status === "finished") {
     const top = ranked(room.players).slice(0, 10);
     const myRank = ranked(room.players).findIndex(p => p.pid === me.pid) + 1;
@@ -812,7 +887,7 @@ function adminRender() {
   if (admin.editingId) {
     const s = admin.sets[admin.editingId] || { name: "", questions: [] };
     const qs = s.questions || [];
-    editor = `<div class="card"><h3>✏️ Đang sửa: ${esc(s.name) || "(bộ mới)"}</h3>
+    editor = `<div class="card mode-quiz"><h3>✏️ Đang sửa: ${esc(s.name) || "(bộ mới)"}</h3>
       <label>Tên bộ câu hỏi</label><input type="text" id="setName" value="${esc(s.name || "")}">
       <div id="qList">${qs.map((q, qi) => qRowHtml(q, qi)).join("")}</div>
       <div class="hostbar">
@@ -823,7 +898,7 @@ function adminRender() {
       <div id="saveMsg"></div></div>`;
   }
   panel.innerHTML = `
-    <div class="card"><h2>🗂️ Chăm sóc bộ câu hỏi</h2>
+    <div class="card mode-quiz"><span class="mode-tag">Trắc nghiệm · Bộ câu hỏi</span><h2>🗂️ Chăm sóc bộ câu hỏi</h2>
       <div class="sub">Mọi bộ câu hỏi đều được lưu trên máy chủ — MC mở phòng ở máy nào cũng thấy. Mật khẩu quản trị đổi ở biến <span class="kbd">ADMIN_PASSWORD</span> đầu file.</div>
       <div class="hostbar">
         <button class="btn" onclick="adminNew()">+ Tạo bộ mới</button>
@@ -1168,7 +1243,7 @@ function fxAfterRender(room) {
     if (!same || fxPrev.status !== room.status || fxPrev.qIndex !== room.qIndex) {
       if (room.status === "playing") sfxJingle();
       else if (room.status === "revealed") sfxReveal();
-      else if (room.status === "finished") sfxVictory();
+      else if (room.status === "finished") { /* Nhạc vinh danh phát đúng lúc công bố GIẢI NHẤT ở sân khấu podium */ }
     }
   }
   fxPrev = { status: room.status, qIndex: room.qIndex || 0, pCount, aCount, code };
