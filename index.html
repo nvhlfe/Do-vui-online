@@ -206,6 +206,12 @@ body.joinmode nav.tabs{display:none!important}
 .rank-banner{margin:16px auto 2px;max-width:520px;border-radius:16px;padding:13px 18px;font-weight:700;font-size:16px;background:var(--soft);border:2px solid var(--line)}
 .rank-banner .rk{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-size:22px;color:var(--purple)}
 .rank-banner.first{background:linear-gradient(135deg,#FFF3C4,#FFE97A);border-color:#FFC93C;color:#7A4A00;animation:pulse .6s ease 2}
+/* ==== Kết quả cá nhân trên máy người chơi khi hết ván (chỉ hiện kết quả của chính họ) ==== */
+.my-final{margin:14px auto 4px;max-width:520px;border-radius:18px;padding:16px 20px;background:var(--soft);border:2px solid var(--line)}
+.my-final .mf-rank{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;font-size:clamp(30px,6vw,42px);color:var(--purple)}
+.my-final .mf-score{font-weight:800;font-size:18px;color:var(--purple2);margin-top:2px}
+.my-final.top3{background:linear-gradient(135deg,#FFF3C4,#FFE97A);border-color:#FFC93C}
+.my-final.top3 .mf-rank{color:#7A4A00}
 /* ==== Tài khoản Admin & phân quyền ==== */
 table.lb td .btn{margin:2px 0}
 .super-badge{background:linear-gradient(135deg,#FFE97A,#FFA602);color:#7A4A00;border-color:#FFC93C}
@@ -912,9 +918,16 @@ function playerRender() {
     else if (myAns.correct) body = `<div class="card center"><div class="big-result" style="color:var(--ok)">🎉 Đúng rồi, giỏi quá!</div><p class="sub">Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p style="font-size:19px">+ <b style="color:var(--purple2)">${myAns.points} điểm</b> câu này · Tổng: <b>${mine.total} điểm</b></p>${rankHtml}</div>`;
     else body = `<div class="card center"><div class="big-result" style="color:var(--bad)">🥹 Tiếc quá, chưa đúng rồi</div><p class="sub">Bạn chọn <b>${LETTERS[myAns.choice]}. ${esc(q.a[myAns.choice])}</b> · Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p class="sub">Tổng điểm hiện tại: <b>${mine.total}</b> — cố lên ở câu sau nhé!</p>${rankHtml}</div>`;
   } else if (room.status === "finished") {
-    const top = ranked(room.players).slice(0, 10);
-    const myRank = ranked(room.players).findIndex(p => p.pid === me.pid) + 1;
-    body = `<div class="card center"><h2>🏁 Hết ván rồi!</h2><p class="sub">Bạn xếp hạng <b style="font-size:19px;color:var(--purple2)">#${myRank || "—"}</b> với <b>${mine.total} điểm</b> · Đúng ${mine.correct} câu</p>${podiumHtml(top)}${lbHtml(top)}<div style="margin-top:14px"><button class="btn alt" onclick="playerLeave()">← Vào phòng khác chơi tiếp</button></div></div>`;
+    /* Kết quả trên máy người chơi: CHỈ hiện kết quả của chính người chơi này.
+       Podium + TOP 10 đầy đủ chỉ hiện trên màn hình chiếu/Admin (hostRender/podSequence). */
+    const totalQ = (room.questions || []).length;
+    const myRank = ranked(room.players || {}).findIndex(p => p.pid === me.pid) + 1;
+    let cheers;
+    if (myRank === 1) cheers = "👑 Vô địch rồi! Bạn là người chơi xuất sắc nhất ván này — quá đỉnh luôn!";
+    else if (myRank === 2 || myRank === 3) cheers = "🎉 Bạn đã vào TOP 3 — tên bạn đang được vinh danh trên màn hình lớn đó!";
+    else if (myRank >= 4 && myRank <= 10) cheers = "🌟 Bạn đã lọt vào TOP 10 — một kết quả rất đáng tự hào!";
+    else cheers = "💪 Cảm ơn bạn đã chơi hết mình! Ván sau mình làm lại tốt hơn nhé!";
+    body = `<div class="card center"><h2>🏁 Hết ván rồi!</h2><div class="my-final ${myRank >= 1 && myRank <= 3 ? "top3" : ""}"><div class="mf-rank">🏅 Hạng ${myRank || "—"}</div><div class="mf-score">${mine.total} điểm · Đúng ${mine.correct}/${totalQ} câu</div></div><p style="font-size:17px;font-weight:700;margin-top:12px">${cheers}</p><p class="sub">Bảng vinh danh đầy đủ đang hiện trên màn hình lớn 📺</p><div style="margin-top:14px"><button class="btn alt" onclick="playerLeave()">← Vào phòng khác chơi tiếp</button></div></div>`;
   }
   box.innerHTML = myHead + body;
 }
