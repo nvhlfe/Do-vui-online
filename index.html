@@ -94,7 +94,8 @@ textarea{min-height:64px}
 .ans.A{background:var(--a);box-shadow:0 6px 0 #8F1226} .ans.B{background:var(--b);box-shadow:0 6px 0 #0B4E8A} .ans.C{background:var(--c);box-shadow:0 6px 0 #9A6204} .ans.D{background:var(--d);box-shadow:0 6px 0 #175C08}
 .ans.dim{opacity:.3;filter:saturate(.35)}
 .ans.correct{outline:5px solid var(--purple);opacity:1;animation:pulse .6s ease 2}
-.ans.picked{outline:4px solid rgba(70,23,143,.55)}
+.ans.picked{outline:5px solid var(--purple);position:relative}
+.ans.picked::after{content:"✓";position:absolute;top:8px;right:10px;background:#fff;color:var(--purple);font-weight:900;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
 .ans:disabled{cursor:default}
 .stat-row{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px}
 .stat-row .bar{flex:1;height:15px;background:var(--soft);border-radius:99px;overflow:hidden}
@@ -212,6 +213,12 @@ body.joinmode nav.tabs{display:none!important}
 .my-final .mf-score{font-weight:800;font-size:18px;color:var(--purple2);margin-top:2px}
 .my-final.top3{background:linear-gradient(135deg,#FFF3C4,#FFE97A);border-color:#FFC93C}
 .my-final.top3 .mf-rank{color:#7A4A00}
+/* ==== Huy hiệu chế độ điểm / nhiều đáp án trên câu hỏi ==== */
+.qbadges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0 2px}
+.qbadge{display:inline-block;font-weight:800;font-size:13.5px;letter-spacing:.4px;border-radius:999px;padding:6px 14px;border:2px solid transparent}
+.qbadge.b2{background:#FFF3C4;border-color:#FFC93C;color:#7A4A00}
+.qbadge.b0{background:#FDE8E8;border-color:#F5B5B5;color:#9B1C1C}
+.qbadge.bm{background:#E3F6E9;border-color:#7ED492;color:#14532D}
 /* ==== Tài khoản Admin & phân quyền ==== */
 table.lb td .btn{margin:2px 0}
 .super-badge{background:linear-gradient(135deg,#FFE97A,#FFA602);color:#7A4A00;border-color:#FFC93C}
@@ -610,6 +617,32 @@ function ranked(playersObj) {
   return Object.entries(playersObj || {}).map(([pid, p]) => { const s = scoreOf(p); return { pid, name: p.name, total: s.total, correct: s.correct }; })
     .sort((x, y) => y.total - x.total || y.correct - x.correct || x.name.localeCompare(y.name));
 }
+/* ---------- Chế độ điểm & nhiều đáp án đúng của câu hỏi ----------
+   Định dạng mới: q.mult = 0 (không tính điểm) | 2 (nhân đôi), vắng mặt = 1 (thường);
+   q.multi = true + q.corrects = [các chỉ số đáp án đúng] khi câu có nhiều đáp án đúng.
+   Bộ câu hỏi cũ (chỉ có q.correct) được hiểu mặc định: ×1, đúng 1 đáp án. */
+function qCorrectSet(q) {
+  if (q && Array.isArray(q.corrects) && q.corrects.length) {
+    const s = [...new Set(q.corrects.map(x => parseInt(x, 10)).filter(x => x >= 0 && x <= 3))].sort((a, b) => a - b);
+    if (s.length) return s;
+  }
+  return [Math.min(3, Math.max(0, parseInt(q && q.correct, 10) || 0))];
+}
+function qIsMulti(q) { return !!(q && q.multi) || qCorrectSet(q).length > 1; }
+function qMult(q) { const m = q && q.mult; return (m === 0 || m === 2) ? m : 1; }
+function qBadgesHtml(q) {
+  const b = [], m = qMult(q);
+  if (m === 2) b.push('<span class="qbadge b2">⭐ ×2 ĐIỂM</span>');
+  if (m === 0) b.push('<span class="qbadge b0">🚫 KHÔNG TÍNH ĐIỂM</span>');
+  if (qIsMulti(q)) b.push('<span class="qbadge bm">☑️ CHỌN NHIỀU ĐÁP ÁN</span>');
+  return b.length ? `<div class="qbadges">${b.join("")}</div>` : "";
+}
+function ansLabel(q, i) { return LETTERS[i] + ". " + esc((q.a || [])[i] ?? ""); }
+function choiceLabel(q, choice) {
+  if (Array.isArray(choice)) return [...choice].sort((a, b) => a - b).map(i => ansLabel(q, i)).join(", ");
+  return ansLabel(q, choice);
+}
+function correctLabel(q) { return qCorrectSet(q).map(i => ansLabel(q, i)).join(", "); }
 let unsubs = [];
 function clearSubs() { unsubs.forEach(u => { try { u(); } catch (e) {} }); unsubs = []; }
 function go(view) {
@@ -732,17 +765,17 @@ function hostRender() {
     const q = room.questions[room.qIndex];
     const total = q.time || 15;
     const answered = Object.values(players).filter(px => px.answers && px.answers[room.qIndex]).length;
-    const answersHtml = `<div class="answers">${q.a.map((t, i) => `<button class="ans ${LETTERS[i]} ${room.status === "revealed" ? (i === q.correct ? "correct" : "dim") : ""}" disabled><span class="sh">${SHAPES[i]}</span><span><b>${LETTERS[i]}.</b> ${esc(t)}</span></button>`).join("")}</div>`;
+    const answersHtml = `<div class="answers">${q.a.map((t, i) => `<button class="ans ${LETTERS[i]} ${room.status === "revealed" ? (qCorrectSet(q).includes(i) ? "correct" : "dim") : ""}" disabled><span class="sh">${SHAPES[i]}</span><span><b>${LETTERS[i]}.</b> ${esc(t)}</span></button>`).join("")}</div>`;
     if (room.status === "playing") {
       body = `<div class="card">
-        <div class="sub center">CÂU ${room.qIndex + 1} / ${room.questions.length} · Đã trả lời: <b>${answered}/${pCount}</b></div>
+        <div class="sub center">CÂU ${room.qIndex + 1} / ${room.questions.length} · Đã trả lời: <b>${answered}/${pCount}</b></div>${qBadgesHtml(q)}
         <div class="timer" id="hostTimer">${total}</div>
         <div class="qtext stage-q">${esc(q.q)}</div>${answersHtml}
         <div class="hostbar"><button class="btn" onclick="hostReveal()">🔓 Khóa lại & công bố đáp án</button></div>
       </div>`;
     } else {
       body = `<div class="card">
-        <div class="sub center">ĐÁP ÁN CÂU ${room.qIndex + 1} / ${room.questions.length}</div>
+        <div class="sub center">ĐÁP ÁN CÂU ${room.qIndex + 1} / ${room.questions.length}</div>${qBadgesHtml(q)}
         <div class="qtext stage-q">${esc(q.q)}</div>${answersHtml}${hostStatsHtml(room, q)}
       </div>
       <div class="card">
@@ -767,10 +800,10 @@ function hostRender() {
 function hostStatsHtml(room, q) {
   const players = Object.values(room.players || {});
   const counts = [0, 0, 0, 0];
-  players.forEach(p => { const a = p.answers && p.answers[room.qIndex]; if (a) counts[a.choice]++; });
+  players.forEach(p => { const a = p.answers && p.answers[room.qIndex]; if (!a) return; if (Array.isArray(a.choice)) a.choice.forEach(ix => { if (counts[ix] !== undefined) counts[ix]++; }); else if (counts[a.choice] !== undefined) counts[a.choice]++; });
   const max = Math.max(1, ...counts);
   return `<h3>📊 Mọi người trả lời thế nào?</h3>` + q.a.map((t, i) => `
-    <div class="stat-row"><span style="width:120px;flex:0 0 120px"><b>${LETTERS[i]}.</b> ${esc(t)} ${i === q.correct ? "✅" : ""}</span>
+    <div class="stat-row"><span style="width:120px;flex:0 0 120px"><b>${LETTERS[i]}.</b> ${esc(t)} ${qCorrectSet(q).includes(i) ? "✅" : ""}</span>
     <span class="bar"><i style="width:${Math.round(counts[i] / max * 100)}%;background:${["var(--a)", "var(--b)", "var(--c)", "var(--d)"][i]}"></i></span><b>${counts[i]}</b></div>`).join("");
 }
 function podiumHtml(top) {
@@ -896,15 +929,26 @@ function playerRender() {
     const q = room.questions[room.qIndex], total = q.time || 15;
     const myAns = player.answers && player.answers[room.qIndex];
     if (myAns) {
-      body = `<div class="card center"><div class="sub">CÂU ${room.qIndex + 1} / ${room.questions.length}</div><div class="timer" id="pTimer"></div><div class="big-result">🔒 Đã gửi câu trả lời!</div><p class="sub">Bạn chọn <b>${LETTERS[myAns.choice]}. ${esc(q.a[myAns.choice])}</b> — ngồi chờ ADMIN công bố đáp án nhé, hồi hộp chưa? 😆</p></div>`;
+      body = `<div class="card center"><div class="sub">CÂU ${room.qIndex + 1} / ${room.questions.length}</div><div class="timer" id="pTimer"></div><div class="big-result">🔒 Đã gửi câu trả lời!</div><p class="sub">Bạn chọn <b>${choiceLabel(q, myAns.choice)}</b> — ngồi chờ ADMIN công bố đáp án nhé, hồi hộp chưa? 😆</p></div>`;
+    } else if (qIsMulti(q)) {
+      if (me.selQ !== room.qIndex) { me.selQ = room.qIndex; me.sel = []; me.autoSub = false; }
+      const sel = me.sel || [];
+      body = `<div class="card"><div class="sub center">CÂU ${room.qIndex + 1} / ${room.questions.length} — trả lời càng nhanh, điểm càng cao đó!</div><div class="timer" id="pTimer">${total}</div>
+        ${qBadgesHtml(q)}
+        <div class="qtext">${esc(q.q)}</div>
+        <p class="sub center" style="margin-top:8px">Chạm để chọn / bỏ chọn từng đáp án — phải chọn <b>đúng tất cả</b> đáp án đúng mới được điểm, thiếu hay thừa đều chưa đúng đâu nhé!</p>
+        <div class="answers">${q.a.map((t, i) => `<button class="ans ${LETTERS[i]} ${sel.includes(i) ? "picked" : ""}" data-ans="${i}" onclick="playerToggle(${i})"><span class="sh">${SHAPES[i]}</span><span><b>${LETTERS[i]}.</b> ${esc(t)}</span></button>`).join("")}</div>
+        <div class="hostbar"><button class="btn" id="multiSubmit" onclick="playerSubmitMulti()" ${sel.length ? "" : "disabled"}>✋ Trả lời — đã chọn <span id="multiCount">${sel.length}</span> đáp án</button></div></div>`;
     } else {
       body = `<div class="card"><div class="sub center">CÂU ${room.qIndex + 1} / ${room.questions.length} — trả lời càng nhanh, điểm càng cao đó!</div><div class="timer" id="pTimer">${total}</div>
+        ${qBadgesHtml(q)}
         <div class="qtext">${esc(q.q)}</div>
         <div class="answers">${q.a.map((t, i) => `<button class="ans ${LETTERS[i]}" onclick="playerAnswer(${i})"><span class="sh">${SHAPES[i]}</span><span><b>${LETTERS[i]}.</b> ${esc(t)}</span></button>`).join("")}</div></div>`;
     }
     setTimeout(() => startTimer(() => Math.max(0, (room.qStartedAt + total * 1000 - Date.now()) / 1000), r => {
       const el = $("pTimer"); if (!el) { stopTimer(); return; }
       el.textContent = Math.ceil(r); el.classList.toggle("low", r <= 5);
+      if (r <= 0 && qIsMulti(q) && !(player.answers && player.answers[room.qIndex]) && !me.autoSub) { me.autoSub = true; playerSubmitMulti(); }
     }), 0);
   } else if (room.status === "revealed") {
     const q = room.questions[room.qIndex];
@@ -914,9 +958,9 @@ function playerRender() {
     let rankHtml = "";
     if (myIdx === 0) rankHtml = `<div class="rank-banner first">👑 <span class="rk">Bạn đang dẫn đầu!</span><div class="sub" style="color:#7A4A00">Bạn đang đứng hạng 1 toàn phòng — giữ vững phong độ ở câu sau nhé!</div></div>`;
     else if (myIdx > 0) { const ab = allRank[myIdx - 1]; const gap = ab.total - mine.total; rankHtml = `<div class="rank-banner">🏅 Bạn đang <span class="rk">hạng ${myIdx + 1}</span><div class="sub">Ngay trên bạn là <b>${esc(ab.name)}</b> · ${ab.total} điểm${gap > 0 ? ` — chỉ hơn bạn ${gap} điểm thôi, cố lên nào!` : " — đang bằng điểm với bạn đó!"}</div></div>`; }
-    if (!myAns) body = `<div class="card center"><div class="big-result">⏰ Hết giờ mất rồi!</div><p class="sub">Câu này bạn chưa kịp chọn đáp án. Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p class="sub">Đừng buồn, còn nhiều câu hay phía sau đang chờ bạn!</p>${rankHtml}</div>`;
-    else if (myAns.correct) body = `<div class="card center"><div class="big-result" style="color:var(--ok)">🎉 Đúng rồi, giỏi quá!</div><p class="sub">Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p style="font-size:19px">+ <b style="color:var(--purple2)">${myAns.points} điểm</b> câu này · Tổng: <b>${mine.total} điểm</b></p>${rankHtml}</div>`;
-    else body = `<div class="card center"><div class="big-result" style="color:var(--bad)">🥹 Tiếc quá, chưa đúng rồi</div><p class="sub">Bạn chọn <b>${LETTERS[myAns.choice]}. ${esc(q.a[myAns.choice])}</b> · Đáp án đúng: <b>${LETTERS[q.correct]}. ${esc(q.a[q.correct])}</b></p><p class="sub">Tổng điểm hiện tại: <b>${mine.total}</b> — cố lên ở câu sau nhé!</p>${rankHtml}</div>`;
+    if (!myAns) body = `<div class="card center"><div class="big-result">⏰ Hết giờ mất rồi!</div><p class="sub">Câu này bạn chưa kịp chọn đáp án. Đáp án đúng: <b>${correctLabel(q)}</b></p><p class="sub">Đừng buồn, còn nhiều câu hay phía sau đang chờ bạn!</p>${rankHtml}</div>`;
+    else if (myAns.correct) body = `<div class="card center"><div class="big-result" style="color:var(--ok)">🎉 Đúng rồi, giỏi quá!</div><p class="sub">Đáp án đúng: <b>${correctLabel(q)}</b></p><p style="font-size:19px">+ <b style="color:var(--purple2)">${myAns.points} điểm</b> câu này · Tổng: <b>${mine.total} điểm</b>${qMult(q) === 0 ? ` <span class="sub">(câu này không tính điểm)</span>` : ""}${qMult(q) === 2 ? ` <span class="sub">(đã nhân đôi ⭐)</span>` : ""}</p>${rankHtml}</div>`;
+    else body = `<div class="card center"><div class="big-result" style="color:var(--bad)">🥹 Tiếc quá, chưa đúng rồi</div><p class="sub">Bạn chọn <b>${choiceLabel(q, myAns.choice)}</b> · Đáp án đúng: <b>${correctLabel(q)}</b></p><p class="sub">Tổng điểm hiện tại: <b>${mine.total}</b> — cố lên ở câu sau nhé!</p>${rankHtml}</div>`;
   } else if (room.status === "finished") {
     /* Kết quả trên máy người chơi: CHỈ hiện kết quả của chính người chơi này.
        Podium + TOP 10 đầy đủ chỉ hiện trên màn hình chiếu/Admin (hostRender/podSequence). */
@@ -936,11 +980,38 @@ async function playerAnswer(choice) {
   const q = room.questions[room.qIndex], total = (q.time || 15) * 1000;
   const elapsed = Date.now() - room.qStartedAt;
   if (elapsed > total + 1500) return;
-  const correct = choice === q.correct;
+  const set = qCorrectSet(q);
+  let correct, storedChoice;
+  if (Array.isArray(choice)) {
+    storedChoice = [...new Set(choice.map(x => parseInt(x, 10)).filter(x => x >= 0 && x <= 3))].sort((a, b) => a - b);
+    correct = storedChoice.length === set.length && storedChoice.every((v, ix) => v === set[ix]);
+  } else {
+    storedChoice = choice;
+    correct = set.length === 1 && choice === set[0];
+  }
   const frac = Math.max(0, 1 - elapsed / total);
-  const points = correct ? Math.round(500 + 500 * frac) : 0;
+  const points = correct ? Math.round((500 + 500 * frac) * qMult(q)) : 0;
   stopTimer();
-  await DB.set("rooms/" + me.code + "/players/" + me.pid + "/answers/" + room.qIndex, { choice, correct, points, elapsedMs: elapsed, at: Date.now() });
+  await DB.set("rooms/" + me.code + "/players/" + me.pid + "/answers/" + room.qIndex, { choice: storedChoice, correct, points, elapsedMs: elapsed, at: Date.now() });
+}
+/* Câu nhiều đáp án đúng: chạm chọn/bỏ chọn, bấm "Trả lời" để chốt; hết giờ tự chốt theo các đáp án đang chọn */
+function playerToggle(i) {
+  const room = me.room; if (!room || room.status !== "playing") return;
+  const player = (room.players || {})[me.pid] || {};
+  if (player.answers && player.answers[room.qIndex]) return;
+  if (me.selQ !== room.qIndex) { me.selQ = room.qIndex; me.sel = []; }
+  const s = me.sel || (me.sel = []);
+  const k = s.indexOf(i);
+  if (k >= 0) s.splice(k, 1); else s.push(i);
+  document.querySelectorAll("#player-room .ans[data-ans]").forEach(b => b.classList.toggle("picked", s.includes(parseInt(b.dataset.ans, 10))));
+  const c = $("multiCount"); if (c) c.textContent = s.length;
+  const btn = $("multiSubmit"); if (btn) btn.disabled = !s.length;
+}
+async function playerSubmitMulti() {
+  const room = me.room; if (!room || room.status !== "playing") return;
+  const sel = (me.selQ === room.qIndex && Array.isArray(me.sel)) ? [...me.sel] : [];
+  if (!sel.length) return; /* không chọn gì = không trả lời */
+  await playerAnswer(sel);
 }
 </script>
 
@@ -1282,6 +1353,7 @@ function adminRender() {
     <h3 style="margin:18px 0 4px">Các bộ hiện có</h3>${list}`;
 }
 function qRowHtml(q, qi) {
+  const cs = qCorrectSet(q), multi = qIsMulti(q), mult = qMult(q);
   return `<div style="border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:10px" data-qrow="${qi}">
     <div class="row"><div><label style="margin-top:0">Câu ${qi + 1}</label><input type="text" data-f="q" value="${esc(q.q || "")}" placeholder="Nội dung câu hỏi"></div>
     <div class="fix"><button class="btn small danger" onclick="adminDelQ(${qi})">✕</button></div></div>
@@ -1292,16 +1364,42 @@ function qRowHtml(q, qi) {
       <div><input type="text" data-f="a3" value="${esc((q.a || [])[3] || "")}" placeholder="D"></div>
     </div>
     <div class="row">
-      <div><label>Đáp án đúng</label><select data-f="correct">${LETTERS.map((L, i) => `<option value="${i}" ${i === (q.correct || 0) ? "selected" : ""}>${L}</option>`).join("")}</select></div>
+      <div><label>Chế độ điểm</label><select data-f="mult">
+        <option value="1" ${mult === 1 ? "selected" : ""}>Điểm thường (×1)</option>
+        <option value="2" ${mult === 2 ? "selected" : ""}>⭐ Nhân đôi (×2)</option>
+        <option value="0" ${mult === 0 ? "selected" : ""}>🚫 Không tính điểm</option>
+      </select></div>
       <div><label>Thời gian (giây)</label><input type="number" data-f="time" value="${q.time || 15}" min="5" max="120"></div>
+    </div>
+    <div class="row">
+      <div><label style="font-weight:700"><input type="checkbox" data-f="multi" ${multi ? "checked" : ""} onchange="qMultiToggle(this)" style="width:auto;margin-right:6px">☑️ Nhiều đáp án đúng</label>
+        <div data-single style="${multi ? "display:none" : ""}"><label>Đáp án đúng</label><select data-f="correct">${LETTERS.map((L, i) => `<option value="${i}" ${i === cs[0] ? "selected" : ""}>${L}</option>`).join("")}</select></div>
+        <div data-many style="${multi ? "" : "display:none"}"><label>Các đáp án đúng — tick từ 2 đáp án trở lên</label><div>${LETTERS.map((L, i) => `<label style="display:inline-block;margin:2px 12px 2px 0;font-weight:700"><input type="checkbox" data-f="c${i}" ${cs.includes(i) ? "checked" : ""} style="width:auto;margin-right:4px">${L}</label>`).join("")}</div></div>
+      </div>
     </div></div>`;
+}
+function qMultiToggle(cb) {
+  const row = cb.closest("[data-qrow]"); if (!row) return;
+  const one = row.querySelector("[data-single]"), many = row.querySelector("[data-many]");
+  if (one) one.style.display = cb.checked ? "none" : "";
+  if (many) many.style.display = cb.checked ? "" : "none";
 }
 function collectEditor() {
   const name = $("setName").value.trim();
   const rows = [...document.querySelectorAll("[data-qrow]")];
   const questions = rows.map(r => {
     const g = f => r.querySelector(`[data-f="${f}"]`).value;
-    return { q: g("q").trim(), a: [g("a0").trim(), g("a1").trim(), g("a2").trim(), g("a3").trim()], correct: parseInt(g("correct"), 10) || 0, time: Math.min(120, Math.max(5, parseInt(g("time"), 10) || 15)) };
+    const mv = parseInt(g("mult"), 10);
+    const base = { q: g("q").trim(), a: [g("a0").trim(), g("a1").trim(), g("a2").trim(), g("a3").trim()], time: Math.min(120, Math.max(5, parseInt(g("time"), 10) || 15)), mult: (mv === 0 || mv === 2) ? mv : 1 };
+    const multiEl = r.querySelector('[data-f="multi"]');
+    if (multiEl && multiEl.checked) {
+      base.multi = true;
+      base.corrects = [0, 1, 2, 3].filter(i => { const c = r.querySelector(`[data-f="c${i}"]`); return c && c.checked; });
+      base.correct = base.corrects.length ? base.corrects[0] : 0;
+    } else {
+      base.correct = parseInt(g("correct"), 10) || 0;
+    }
+    return base;
   }).filter(x => x.q && x.a.every(v => v));
   return { name, questions };
 }
@@ -1310,6 +1408,8 @@ async function adminSave() {
   const msg = $("saveMsg");
   if (!name) { msg.innerHTML = "<div class='msg err'>Bạn chưa đặt tên cho bộ câu hỏi rồi.</div>"; return; }
   if (!questions.length) { msg.innerHTML = "<div class='msg err'>Cần ít nhất 1 câu hỏi điền đầy đủ (câu hỏi + đủ 4 đáp án) bạn nhé.</div>"; return; }
+  const badQ = questions.findIndex(x => x.multi && (!Array.isArray(x.corrects) || x.corrects.length < 2));
+  if (badQ >= 0) { msg.innerHTML = "<div class='msg err'>Câu " + (badQ + 1) + " đang bật chế độ nhiều đáp án đúng nhưng mới đánh dấu " + ((questions[badQ].corrects || []).length) + " đáp án đúng — cần tick ít nhất 2 đáp án đúng bạn nhé.</div>"; return; }
   await DB.set(mySetsPath() + "/" + admin.editingId, { name, questions, updatedAt: Date.now() });
   msg.innerHTML = "<div class='msg okm'>✅ Đã lưu bộ “" + esc(name) + "” — " + questions.length + " câu.</div>";
 }
