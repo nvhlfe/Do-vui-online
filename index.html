@@ -180,6 +180,21 @@ body.stage-mode .wrap{max-width:1240px}
 .cloud-word{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;line-height:1.05;padding:2px 4px;animation:rise .4s ease both}
 .phrase-chip{display:inline-block;background:#FFF4D6;border:1.5px solid #FFE1A1;color:#7A4A00;border-radius:999px;padding:9px 15px;font-weight:700;font-size:15px;margin:4px;animation:rise .3s ease both}
 .my-chip{display:inline-block;background:var(--soft);border:1.5px solid var(--line);color:var(--purple);border-radius:999px;padding:7px 13px;font-weight:600;font-size:14px;margin:3px}
+/* ==== Slideshow đám mây chữ (màn hình chính: mỗi câu trả lời 1 từ/cụm riêng, không gộp trùng) ==== */
+.slide-head{text-align:center;padding:6px 8px 2px}
+.slide-q{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;font-size:clamp(30px,5.4vw,52px);color:var(--purple);line-height:1.15;margin-top:8px}
+.slide-area{position:relative;height:calc(100vh - 315px);min-height:330px;background:#fff;border:2px solid var(--line);border-radius:24px;box-shadow:0 14px 34px rgba(70,23,143,.09);overflow:hidden;margin-top:10px}
+.slide-word{position:absolute;font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;line-height:1.12;text-align:center;max-width:46%;animation:rise .4s ease both;text-shadow:0 2px 0 rgba(255,255,255,.75)}
+.slide-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}
+.slide-qr{position:absolute;width:118px;background:#fff;border:2px dashed #D9CFFF;border-radius:14px;padding:7px;text-align:center;z-index:6;box-shadow:0 8px 20px rgba(70,23,143,.16);cursor:zoom-in}
+.slide-qr img{width:100%;height:auto;display:block;border-radius:6px}
+.slide-qr .sub{font-size:11px;line-height:1.3;margin-top:3px;font-weight:700}
+.slide-qr.c0{right:14px;bottom:14px}
+.slide-qr.c1{left:14px;bottom:14px}
+.slide-qr.c2{right:14px;top:14px}
+.slide-qr.c3{left:14px;top:14px}
+.slide-controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-top:10px;opacity:.5;transition:opacity .2s}
+.slide-controls:hover{opacity:1}
 body.joinmode nav.tabs{display:none!important}
 .qrbox img{cursor:zoom-in}
 #qrModal{position:fixed;inset:0;background:rgba(34,8,74,.9);z-index:60;display:flex;align-items:center;justify-content:center;padding:18px}
@@ -707,7 +722,7 @@ async function hostInit() {
   const cc = $("cloud-create"), ha = $("host-active"), vc = $("vote-create");
   if (host.code) {
     $("host-create").classList.add("hidden"); if (cc) cc.classList.add("hidden"); if (vc) vc.classList.add("hidden");
-    if (ha) { ha.classList.remove("hidden"); ha.innerHTML = `<div class="row"><div>📺 <b>Đang có phòng ${esc(host.code)}</b> ở màn hình chiếu${host.room ? " — " + esc(host.room.name || host.room.prompt || "") : ""}. Khu Admin chỉ để quản lý câu hỏi, điều khiển game ở màn hình chiếu nhé.</div><div class="fix"><button class="btn small" onclick="go('stage')">Quay lại màn hình chiếu</button> <button class="btn small danger" onclick="hostReset(false)">Đóng phòng</button></div></div>`; }
+    if (ha) { ha.classList.remove("hidden"); ha.innerHTML = `<div class="row"><div>📺 <b>Đang có phòng ${esc(host.code)}</b> ở màn hình chiếu${host.room ? " — " + esc(host.room.name || host.room.prompt || "") : ""}. Khu Admin chỉ để quản lý câu hỏi, điều khiển game ở màn hình chiếu nhé.</div><div class="fix">${host.room && host.room.type === "cloud" ? '<button class="btn small" onclick="slideOpenGo()">▶️ Slideshow</button> ' : ""}<button class="btn small" onclick="go('stage')">Quay lại màn hình chiếu</button> <button class="btn small danger" onclick="hostReset(false)">Đóng phòng</button></div></div>`; }
   } else {
     $("host-create").classList.remove("hidden"); if (cc) cc.classList.remove("hidden"); if (vc) vc.classList.remove("hidden");
     if (ha) { ha.classList.add("hidden"); ha.innerHTML = ""; }
@@ -1278,6 +1293,7 @@ function roomsRender() {
     return `<div class="row" style="border-bottom:1.5px solid var(--line);padding:9px 0">
       <div><b>${esc(code)}</b> · ${typeLabel(r)} · ${esc(r.name || r.prompt || r.question || "")}<br><span class="sub">Chủ phòng: ${esc(owner)}${mine ? " · 📺 đang ở màn hình chiếu của máy này" : ""}</span></div>
       <div class="fix"><button class="btn small" onclick="roomTakeControl('${code}')">📺 Màn hình chiếu</button>
+      ${r.type === "cloud" ? `<button class="btn small alt" onclick="roomSlide('${code}')">▶️ Slideshow</button>` : ""}
       <button class="btn small danger" onclick="roomClose('${code}')">Đóng phòng</button></div>
     </div>`;
   }).join("");
@@ -1287,6 +1303,12 @@ function roomTakeControl(code) {
   host.code = code; host.room = r;
   window.STAGE_MODE = "room";
   go("stage");
+}
+function roomSlide(code) {
+  const r = adminRooms[code]; if (!r) return;
+  host.code = code; host.room = r;
+  window.STAGE_MODE = "room";
+  slideOpenGo();
 }
 async function roomClose(code) {
   if (!confirm("Đóng phòng " + code + "? Người chơi trong phòng sẽ bị thoát ra.")) return;
@@ -1488,6 +1510,7 @@ async function cloudCreateRoom() {
   if (await DB.get("rooms/" + code)) code = roomCode();
   await DB.set("rooms/" + code, { type: "cloud", name: prompt, prompt, maxWords, status: "open", createdAt: Date.now(), ownerUid: curUid(), answers: {} });
   host.code = code;
+  host.cloudSlide = false; slideStopTimer();
   window.STAGE_MODE = "room";
   go("stage");
 }
@@ -1502,6 +1525,7 @@ function cloudWords(room) {
 const CLOUD_COLORS = ["#E21B3C", "#1368CE", "#E8930C", "#26890C", "#7B2FF7", "#FF5D8F", "#0097B5", "#D35400"];
 function cloudHostRender(room) {
   const box = $("host-room"), code = host.code;
+  if (host.cloudSlide) { cloudSlideRender(room); return; }
   const answers = Object.values(room.answers || {}).sort((a, b) => (a.at || 0) - (b.at || 0));
   const people = new Set(answers.map(a => a.pid)).size;
   let display = "";
@@ -1530,6 +1554,7 @@ function cloudHostRender(room) {
         <div class="fix center"><img class="qr-thumb" alt="QR tham gia" title="Bấm để phóng to cho mọi người quét" onclick="qrZoom(true)" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinLink(code))}"><div class="sub">Bấm QR để phóng to</div></div>
         <div>
           <div class="hostbar" style="margin-top:0">
+            <button class="btn" onclick="slideOpen()">▶️ Slideshow</button>
             <button class="btn ${host.cloudView === "cloud" ? "" : "alt"}" onclick="host.cloudView='cloud';hostRender()">☁️ Đám mây chữ</button>
             <button class="btn ${host.cloudView === "list" ? "" : "alt"}" onclick="host.cloudView='list';hostRender()">💬 Từng câu trả lời</button>
             <button class="btn alt" onclick="cloudClearAnswers()">🧹 Xóa hết câu trả lời</button>
@@ -1543,6 +1568,117 @@ function cloudHostRender(room) {
       </div>
     </div>`;
 }
+/* ---------- Slideshow đám mây chữ ----------
+   Khác view mây thường (gộp từ theo tần suất): ở Slideshow, MỖI câu trả lời là
+   1 từ/cụm riêng — trả lời trùng nhau vẫn hiện riêng từng chữ, không gộp.
+   Layout (vị trí/góc xoay/cỡ chữ/màu) lưu theo khóa câu trả lời nên chữ cũ đứng
+   yên khi có chữ mới; chỉ xáo lại khi bấm nút, bấm phím ← → hoặc timer 10 giây. */
+host.cloudSlide = false;
+const slide = {
+  timer: null, paused: false, roomCode: null,
+  layouts: new Map(), seq: 0,
+  qrCorner: 0, qrHidden: false
+};
+const SLIDE_QR_CORNERS = ["góc phải dưới", "góc trái dưới", "góc phải trên", "góc trái trên"];
+function slideLayoutFor(key, text) {
+  let L = slide.layouts.get(key);
+  if (L) return L;
+  const len = String(text || "").length;
+  const maxS = len > 20 ? 29 : len > 10 ? 39 : 52;
+  slide.seq += 1;
+  L = {
+    x: 8 + Math.random() * 82,
+    y: 10 + Math.random() * 78,
+    rot: (slide.seq % 3 === 2 || Math.random() < 0.22) ? 90 : 0,
+    size: 21 + Math.floor(Math.random() * (maxS - 20)),
+    col: CLOUD_COLORS[Math.floor(Math.random() * CLOUD_COLORS.length)]
+  };
+  slide.layouts.set(key, L);
+  return L;
+}
+function slideShuffleAll() {
+  slide.layouts.clear(); slide.seq = 0;
+  const room = host.room; if (!room) return;
+  Object.entries(room.answers || {}).forEach(([k, a]) => slideLayoutFor(k, a.text));
+  if (host.cloudSlide && room.type === "cloud") hostRender();
+}
+function slideTick() {
+  if (!host.cloudSlide) { slideStopTimer(); return; }
+  if (slide.paused) return;
+  slideShuffleAll();
+}
+function slideStartTimer() {
+  slideStopTimer();
+  slide.timer = setInterval(slideTick, 10000);
+}
+function slideStopTimer() { if (slide.timer) { clearInterval(slide.timer); slide.timer = null; } }
+function slideOpen() {
+  host.cloudSlide = true; slide.paused = false;
+  slideShuffleAll();
+  slideStartTimer();
+  hostRender();
+}
+function slideOpenGo() {
+  host.cloudSlide = true; slide.paused = false;
+  slideShuffleAll();
+  slideStartTimer();
+  go("stage");
+  if (host.room) hostRender();
+}
+function slideExit() {
+  host.cloudSlide = false;
+  slideStopTimer();
+  hostRender();
+}
+function slideTogglePause() {
+  slide.paused = !slide.paused;
+  hostRender();
+}
+function slideQrCycle() {
+  slide.qrCorner = (slide.qrCorner + 1) % 4;
+  hostRender();
+}
+function slideQrToggle() {
+  slide.qrHidden = !slide.qrHidden;
+  hostRender();
+}
+function cloudSlideRender(room) {
+  const box = $("host-room"), code = host.code;
+  if (slide.roomCode !== code) { slide.roomCode = code; slide.layouts.clear(); slide.seq = 0; }
+  const entries = Object.entries(room.answers || {}).sort((p, q) => (p[1].at || 0) - (q[1].at || 0));
+  const alive = new Set(entries.map(([k]) => k));
+  [...slide.layouts.keys()].forEach(k => { if (!alive.has(k)) slide.layouts.delete(k); });
+  const people = new Set(entries.map(([, a]) => a.pid)).size;
+  const wordsHtml = entries.length
+    ? entries.map(([k, a]) => {
+        const L = slideLayoutFor(k, a.text);
+        return `<span class="slide-word" style="left:${L.x.toFixed(1)}%;top:${L.y.toFixed(1)}%;transform:translate(-50%,-50%) rotate(${L.rot}deg);font-size:${L.size}px;color:${L.col}">${esc(a.text)}</span>`;
+      }).join("")
+    : `<div class="slide-empty"><p class="sub" style="font-size:19px">Chưa có câu trả lời nào — mọi người quét mã QR ở góc màn hình và gửi từ lên nhé ☁️</p></div>`;
+  const qrHtml = slide.qrHidden ? "" : `<div class="slide-qr c${slide.qrCorner}" title="Bấm để phóng to" onclick="qrZoom(true)"><img alt="QR tham gia" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinLink(code))}"><div class="sub">Quét để trả lời · ${esc(code)}</div></div>`;
+  box.innerHTML = `
+    <div class="slide-head">
+      <span class="pill">☁️ ĐÁM MÂY CHỮ · ▶️ SLIDESHOW</span>
+      <div class="slide-q">${esc(room.prompt)}</div>
+      <div class="sub" style="font-size:16px">💬 ${entries.length} câu trả lời · 🙋 ${people} bạn đã tham gia · Mã phòng <b>${esc(code)}</b></div>
+    </div>
+    <div class="slide-area" id="slideArea">${wordsHtml}${qrHtml}</div>
+    <div class="slide-controls">
+      <button class="btn small alt" onclick="slideShuffleAll()">⏮ Xáo lại</button>
+      <button class="btn small alt" onclick="slideTogglePause()">${slide.paused ? "▶ Chạy tiếp" : "⏸ Tạm dừng"}</button>
+      <button class="btn small alt" onclick="slideShuffleAll()">Xáo lại ⏭</button>
+      <button class="btn small alt" onclick="slideQrCycle()">📍 QR: ${SLIDE_QR_CORNERS[slide.qrCorner]}</button>
+      <button class="btn small alt" onclick="slideQrToggle()">${slide.qrHidden ? "👁 Hiện QR" : "🙈 Ẩn QR"}</button>
+      <button class="btn small danger" onclick="slideExit()">✖ Thoát Slideshow</button>
+      <span class="sub">Bố cục tự xáo lại mỗi 10 giây · Bấm phím ← → cũng xáo được</span>
+    </div>`;
+}
+document.addEventListener("keydown", e => {
+  if (!host.cloudSlide) return;
+  const t = e.target;
+  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight") slideShuffleAll();
+});
 async function cloudSetPrompt() {
   const v = $("cloudPromptInput").value.trim();
   if (!v || !host.room) return;
