@@ -180,21 +180,21 @@ body.stage-mode .wrap{max-width:1240px}
 .cloud-word{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;line-height:1.05;padding:2px 4px;animation:rise .4s ease both}
 .phrase-chip{display:inline-block;background:#FFF4D6;border:1.5px solid #FFE1A1;color:#7A4A00;border-radius:999px;padding:9px 15px;font-weight:700;font-size:15px;margin:4px;animation:rise .3s ease both}
 .my-chip{display:inline-block;background:var(--soft);border:1.5px solid var(--line);color:var(--purple);border-radius:999px;padding:7px 13px;font-weight:600;font-size:14px;margin:3px}
-/* ==== Slideshow đám mây chữ (màn hình chính: mỗi câu trả lời 1 từ/cụm riêng, không gộp trùng) ==== */
-.slide-head{text-align:center;padding:6px 8px 2px}
-.slide-q{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;font-size:clamp(30px,5.4vw,52px);color:var(--purple);line-height:1.15;margin-top:8px}
-.slide-area{position:relative;height:calc(100vh - 315px);min-height:330px;background:#fff;border:2px solid var(--line);border-radius:24px;box-shadow:0 14px 34px rgba(70,23,143,.09);overflow:hidden;margin-top:10px}
-.slide-word{position:absolute;font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;line-height:1.12;text-align:center;max-width:46%;animation:rise .4s ease both;text-shadow:0 2px 0 rgba(255,255,255,.75)}
+/* ==== Slideshow đám mây chữ (màn hình chính: mỗi câu trả lời 1 từ/cụm riêng, không gộp trùng, chữ không đè nhau) ==== */
+.slide-screen{position:fixed;inset:0;z-index:58;display:flex;flex-direction:column;padding:16px 20px 14px;background:
+  radial-gradient(700px 420px at 8% -4%, rgba(255,93,143,.20) 0%, transparent 60%),
+  radial-gradient(760px 460px at 94% 2%, rgba(0,184,230,.18) 0%, transparent 60%),
+  radial-gradient(900px 620px at 50% 112%, rgba(255,166,2,.16) 0%, transparent 60%),
+  var(--bg)}
+.slide-q{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;font-size:clamp(30px,5.4vw,52px);color:var(--purple);line-height:1.15;text-align:center;padding:2px 8px 6px}
+.slide-area{position:relative;flex:1;min-height:0;overflow:hidden}
+.slide-word{position:absolute;font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;line-height:1.12;text-align:center;animation:rise .4s ease both;text-shadow:0 2px 0 rgba(255,255,255,.75)}
 .slide-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}
-.slide-qr{position:absolute;width:118px;background:#fff;border:2px dashed #D9CFFF;border-radius:14px;padding:7px;text-align:center;z-index:6;box-shadow:0 8px 20px rgba(70,23,143,.16);cursor:zoom-in}
+.slide-qr{position:absolute;right:6px;bottom:6px;width:118px;background:#fff;border:2px dashed #D9CFFF;border-radius:14px;padding:7px;text-align:center;z-index:6;box-shadow:0 8px 20px rgba(70,23,143,.16);cursor:zoom-in}
 .slide-qr img{width:100%;height:auto;display:block;border-radius:6px}
 .slide-qr .sub{font-size:11px;line-height:1.3;margin-top:3px;font-weight:700}
-.slide-qr.c0{right:14px;bottom:14px}
-.slide-qr.c1{left:14px;bottom:14px}
-.slide-qr.c2{right:14px;top:14px}
-.slide-qr.c3{left:14px;top:14px}
-.slide-controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-top:10px;opacity:.5;transition:opacity .2s}
-.slide-controls:hover{opacity:1}
+.slide-exit{position:absolute;top:4px;right:6px;z-index:8;width:36px;height:36px;border-radius:50%;border:none;background:#E21B3C;color:#fff;font-size:18px;font-weight:900;line-height:1;cursor:pointer;opacity:.35;transition:opacity .2s;box-shadow:0 6px 16px rgba(226,27,60,.35)}
+.slide-exit:hover,.slide-exit:active{opacity:1}
 body.joinmode nav.tabs{display:none!important}
 .qrbox img{cursor:zoom-in}
 #qrModal{position:fixed;inset:0;background:rgba(34,8,74,.9);z-index:60;display:flex;align-items:center;justify-content:center;padding:18px}
@@ -1570,57 +1570,159 @@ function cloudHostRender(room) {
 }
 /* ---------- Slideshow đám mây chữ ----------
    Khác view mây thường (gộp từ theo tần suất): ở Slideshow, MỖI câu trả lời là
-   1 từ/cụm riêng — trả lời trùng nhau vẫn hiện riêng từng chữ, không gộp.
-   Layout (vị trí/góc xoay/cỡ chữ/màu) lưu theo khóa câu trả lời nên chữ cũ đứng
-   yên khi có chữ mới; chỉ xáo lại khi bấm nút, bấm phím ← → hoặc timer 10 giây. */
+   1 từ/cụm riêng — trả lời giống hệt nhau vẫn hiện riêng từng chữ, không gộp.
+   Bố cục đặt theo KHUNG CHỮ NHẬT THẬT của từng từ (ước lượng bề rộng ký tự ×
+   cỡ chữ, cộng khoảng đệm; từ xoay dọc 90° thì hoán đổi rộng/cao) và kiểm tra
+   va chạm từng cặp nên chữ KHÔNG đè lên nhau; quá đông thì cỡ chữ tự giảm dần.
+   Chữ cũ giữ nguyên vị trí khi có chữ mới; toàn bố cục tự xáo lại mỗi 20 giây.
+   Màn Slideshow KHÔNG có nút điều khiển: chỉ còn câu hỏi lớn, vùng chữ rộng
+   hết màn hình, QR cố định ở góc phải-dưới và dấu ✕ đỏ nhỏ ở góc phải-trên. */
 host.cloudSlide = false;
+const SLIDE_INTERVAL_MS = 20000;
+const SLIDE_QR_W = 160, SLIDE_QR_H = 178; /* vùng chừa riêng cho QR ở góc phải-dưới vùng mây */
 const slide = {
-  timer: null, paused: false, roomCode: null,
-  layouts: new Map(), seq: 0,
-  qrCorner: 0, qrHidden: false
+  timer: null, roomCode: null,
+  boxes: new Map(), areaW: 0, areaH: 0
 };
-const SLIDE_QR_CORNERS = ["góc phải dưới", "góc trái dưới", "góc phải trên", "góc trái trên"];
-function slideLayoutFor(key, text) {
-  let L = slide.layouts.get(key);
-  if (L) return L;
-  const len = String(text || "").length;
-  const maxS = len > 20 ? 29 : len > 10 ? 39 : 52;
-  slide.seq += 1;
-  L = {
-    x: 8 + Math.random() * 82,
-    y: 10 + Math.random() * 78,
-    rot: (slide.seq % 3 === 2 || Math.random() < 0.22) ? 90 : 0,
-    size: 21 + Math.floor(Math.random() * (maxS - 20)),
-    col: CLOUD_COLORS[Math.floor(Math.random() * CLOUD_COLORS.length)]
-  };
-  slide.layouts.set(key, L);
-  return L;
+function slideHash(s) { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
+function slideAreaSize() {
+  const el = document.getElementById("slideArea");
+  const w = (el && el.clientWidth) || Math.max(300, window.innerWidth - 40);
+  const h = (el && el.clientHeight) || Math.max(260, window.innerHeight - 150);
+  return { w, h };
+}
+/* Ước lượng kích thước thật của phần chữ ở cỡ chữ size trong vùng rộng areaW.
+   Trả về {cw, ch} = rộng/cao của phần chữ (chưa tính đệm, chưa xoay). */
+function slideMeasure(text, size, areaW) {
+  const t = String(text || "").normalize("NFC");
+  let units = 0;
+  for (const ch of t) {
+    if (ch === " ") units += 0.30;
+    else if ("iljtf.,'!|:;()".includes(ch)) units += 0.34;
+    else if ("mwMW".includes(ch)) units += 0.88;
+    else if (ch === ch.toUpperCase() && ch !== ch.toLowerCase()) units += 0.67;
+    else units += 0.57;
+  }
+  const textW = units * size * 1.07;
+  const maxLineW = Math.max(120, areaW * 0.46);
+  const lines = Math.max(1, Math.ceil(textW / maxLineW - 1e-6));
+  return { cw: Math.min(textW, maxLineW), ch: lines * size * 1.12 };
+}
+function slideDesiredSize(text) {
+  const len = String(text || "").normalize("NFC").length;
+  return len > 20 ? 30 : len > 10 ? 40 : 54;
+}
+/* Khung chữ nhật chiếm chỗ của 1 từ (đã cộng đệm; xoay dọc thì hoán đổi rộng/cao). */
+function slideFootprint(text, size, rot, areaW) {
+  const m = slideMeasure(text, size, areaW);
+  const padX = Math.max(9, size * 0.30), padY = Math.max(7, size * 0.24);
+  let w = m.cw + padX * 2, h = m.ch + padY * 2;
+  if (rot === 90) { const t = w; w = h; h = t; }
+  return { w, h, cw: m.cw };
+}
+function slideRectsOverlap(a, b) {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+function slideOverlapArea(a, b) {
+  const ox = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+  const oy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  return ox * oy;
+}
+/* Tìm vị trí trống cho 1 từ: thử ngẫu nhiên ở cỡ chữ mong muốn; chật thì giảm dần cỡ chữ. */
+function slidePlaceOne(key, text, placed, area) {
+  const hash = slideHash(key + "|" + text);
+  const rot = hash % 10 < 3 ? 90 : 0;
+  const col = CLOUD_COLORS[hash % CLOUD_COLORS.length];
+  const obstacles = placed.concat([{ x: area.w - SLIDE_QR_W, y: area.h - SLIDE_QR_H, w: SLIDE_QR_W, h: SLIDE_QR_H }]);
+  let size = slideDesiredSize(text) - (hash % 9);
+  if (size < 20) size = 20;
+  let best = null, bestOverlap = Infinity;
+  for (let step = 0; step < 8 && size >= 15; step++) {
+    const fp = slideFootprint(text, size, rot, area.w);
+    if (fp.w <= area.w && fp.h <= area.h) {
+      for (let i = 0; i < 110; i++) {
+        const r = { x: Math.random() * (area.w - fp.w), y: Math.random() * (area.h - fp.h), w: fp.w, h: fp.h };
+        if (!obstacles.some(o => slideRectsOverlap(r, o))) return { ...r, size, rot, col, cw: fp.cw };
+      }
+      /* Thử thêm các vị trí "neo" sát mép các khung đã đặt — dễ tìm được khe trống cho từ dài */
+      const xs = new Set([0, Math.max(0, area.w - fp.w)]), ys = new Set([0, Math.max(0, area.h - fp.h)]);
+      obstacles.forEach(o => {
+        xs.add(Math.min(area.w - fp.w, Math.max(0, o.x + o.w + 2)));
+        xs.add(Math.min(area.w - fp.w, Math.max(0, o.x - fp.w - 2)));
+        ys.add(Math.min(area.h - fp.h, Math.max(0, o.y + o.h + 2)));
+        ys.add(Math.min(area.h - fp.h, Math.max(0, o.y - fp.h - 2)));
+      });
+      for (const x of xs) for (const y of ys) {
+        const r = { x, y, w: fp.w, h: fp.h };
+        if (!obstacles.some(o => slideRectsOverlap(r, o))) return { ...r, size, rot, col, cw: fp.cw };
+      }
+      for (let i = 0; i < 30; i++) {
+        const r = { x: Math.random() * (area.w - fp.w), y: Math.random() * (area.h - fp.h), w: fp.w, h: fp.h };
+        let ov = 0;
+        obstacles.forEach(o => { ov += slideOverlapArea(r, o); });
+        if (ov < bestOverlap) { bestOverlap = ov; best = { ...r, size, rot, col, cw: fp.cw }; }
+      }
+    }
+    size = Math.floor(size * 0.88);
+  }
+  if (best) return best;
+  const fp = slideFootprint(text, 15, rot, area.w);
+  return { x: 0, y: 0, w: Math.min(fp.w, area.w), h: Math.min(fp.h, area.h), size: 15, rot, col, cw: fp.cw };
+}
+function slideLayoutAll(area) {
+  slide.boxes.clear();
+  const room = host.room; if (!room) return;
+  const entries = Object.entries(room.answers || {});
+  /* Đặt từ có khung LỚN trước, từ nhỏ lấp khe sau — tránh hết chỗ cho từ dài */
+  const sized = entries.map(([k, a]) => { const fp = slideFootprint(a.text, slideDesiredSize(a.text), 0, area.w); return { k, a, s: fp.w * fp.h }; }).sort((p, q) => q.s - p.s);
+  const placed = [];
+  sized.forEach(({ k, a }) => { const b = slidePlaceOne(k, a.text, placed, area); slide.boxes.set(k, b); placed.push(b); });
+  slide.areaW = area.w; slide.areaH = area.h;
+}
+/* Bảo đảm mọi câu trả lời đều có khung vị trí; chữ cũ KHÔNG đổi vị trí,
+   trừ khi kích thước vùng mây thay đổi (xoay màn hình/đổi cửa sổ) thì đặt lại hết. */
+function slideEnsure(area) {
+  const room = host.room; if (!room) return;
+  const entries = Object.entries(room.answers || {});
+  const alive = new Set(entries.map(([k]) => k));
+  [...slide.boxes.keys()].forEach(k => { if (!alive.has(k)) slide.boxes.delete(k); });
+  if (!slide.areaW || Math.abs(area.w - slide.areaW) > 4 || Math.abs(area.h - slide.areaH) > 4) { slideLayoutAll(area); return; }
+  const placed = [...slide.boxes.values()];
+  entries.forEach(([k, a]) => {
+    if (!slide.boxes.has(k)) { const b = slidePlaceOne(k, a.text, placed, area); slide.boxes.set(k, b); placed.push(b); }
+  });
 }
 function slideShuffleAll() {
-  slide.layouts.clear(); slide.seq = 0;
-  const room = host.room; if (!room) return;
-  Object.entries(room.answers || {}).forEach(([k, a]) => slideLayoutFor(k, a.text));
-  if (host.cloudSlide && room.type === "cloud") hostRender();
+  if (!host.room) return;
+  slideLayoutAll(slideAreaSize());
+  if (host.cloudSlide && host.room.type === "cloud") hostRender();
 }
 function slideTick() {
   if (!host.cloudSlide) { slideStopTimer(); return; }
-  if (slide.paused) return;
   slideShuffleAll();
 }
 function slideStartTimer() {
   slideStopTimer();
-  slide.timer = setInterval(slideTick, 10000);
+  slide.timer = setInterval(slideTick, SLIDE_INTERVAL_MS);
 }
 function slideStopTimer() { if (slide.timer) { clearInterval(slide.timer); slide.timer = null; } }
+function slideFullscreen(on) {
+  try {
+    if (on) { const p = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); if (p && p.catch) p.catch(() => {}); }
+    else if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+  } catch (e) { /* trình duyệt từ chối fullscreen thì vẫn hiện đầy viewport như thường */ }
+}
 function slideOpen() {
-  host.cloudSlide = true; slide.paused = false;
-  slideShuffleAll();
+  host.cloudSlide = true;
+  slideFullscreen(true);
+  slide.boxes.clear(); slide.areaW = 0; slide.areaH = 0;
   slideStartTimer();
   hostRender();
 }
 function slideOpenGo() {
-  host.cloudSlide = true; slide.paused = false;
-  slideShuffleAll();
+  host.cloudSlide = true;
+  slideFullscreen(true);
+  slide.boxes.clear(); slide.areaW = 0; slide.areaH = 0;
   slideStartTimer();
   go("stage");
   if (host.room) hostRender();
@@ -1628,57 +1730,37 @@ function slideOpenGo() {
 function slideExit() {
   host.cloudSlide = false;
   slideStopTimer();
-  hostRender();
-}
-function slideTogglePause() {
-  slide.paused = !slide.paused;
-  hostRender();
-}
-function slideQrCycle() {
-  slide.qrCorner = (slide.qrCorner + 1) % 4;
-  hostRender();
-}
-function slideQrToggle() {
-  slide.qrHidden = !slide.qrHidden;
+  slideFullscreen(false);
   hostRender();
 }
 function cloudSlideRender(room) {
   const box = $("host-room"), code = host.code;
-  if (slide.roomCode !== code) { slide.roomCode = code; slide.layouts.clear(); slide.seq = 0; }
+  if (slide.roomCode !== code) { slide.roomCode = code; slide.boxes.clear(); slide.areaW = 0; slide.areaH = 0; }
+  const area = slideAreaSize();
+  slideEnsure(area);
   const entries = Object.entries(room.answers || {}).sort((p, q) => (p[1].at || 0) - (q[1].at || 0));
-  const alive = new Set(entries.map(([k]) => k));
-  [...slide.layouts.keys()].forEach(k => { if (!alive.has(k)) slide.layouts.delete(k); });
-  const people = new Set(entries.map(([, a]) => a.pid)).size;
   const wordsHtml = entries.length
     ? entries.map(([k, a]) => {
-        const L = slideLayoutFor(k, a.text);
-        return `<span class="slide-word" style="left:${L.x.toFixed(1)}%;top:${L.y.toFixed(1)}%;transform:translate(-50%,-50%) rotate(${L.rot}deg);font-size:${L.size}px;color:${L.col}">${esc(a.text)}</span>`;
+        const b = slide.boxes.get(k); if (!b) return "";
+        const cx = (b.x + b.w / 2).toFixed(1), cy = (b.y + b.h / 2).toFixed(1);
+        return `<span class="slide-word" style="left:${cx}px;top:${cy}px;width:${Math.round(b.cw)}px;transform:translate(-50%,-50%) rotate(${b.rot}deg);font-size:${b.size}px;color:${b.col}">${esc(a.text)}</span>`;
       }).join("")
     : `<div class="slide-empty"><p class="sub" style="font-size:19px">Chưa có câu trả lời nào — mọi người quét mã QR ở góc màn hình và gửi từ lên nhé ☁️</p></div>`;
-  const qrHtml = slide.qrHidden ? "" : `<div class="slide-qr c${slide.qrCorner}" title="Bấm để phóng to" onclick="qrZoom(true)"><img alt="QR tham gia" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinLink(code))}"><div class="sub">Quét để trả lời · ${esc(code)}</div></div>`;
   box.innerHTML = `
-    <div class="slide-head">
-      <span class="pill">☁️ ĐÁM MÂY CHỮ · ▶️ SLIDESHOW</span>
-      <div class="slide-q">${esc(room.prompt)}</div>
-      <div class="sub" style="font-size:16px">💬 ${entries.length} câu trả lời · 🙋 ${people} bạn đã tham gia · Mã phòng <b>${esc(code)}</b></div>
+  <div class="slide-screen">
+    <button class="slide-exit" onclick="slideExit()" title="Thoát Slideshow" aria-label="Thoát Slideshow">✕</button>
+    <div class="slide-q">${esc(room.prompt)}</div>
+    <div class="slide-area" id="slideArea">${wordsHtml}
+      <div class="slide-qr" title="Bấm để phóng to" onclick="qrZoom(true)"><img alt="QR tham gia" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinLink(code))}"><div class="sub">Quét để trả lời · ${esc(code)}</div></div>
     </div>
-    <div class="slide-area" id="slideArea">${wordsHtml}${qrHtml}</div>
-    <div class="slide-controls">
-      <button class="btn small alt" onclick="slideShuffleAll()">⏮ Xáo lại</button>
-      <button class="btn small alt" onclick="slideTogglePause()">${slide.paused ? "▶ Chạy tiếp" : "⏸ Tạm dừng"}</button>
-      <button class="btn small alt" onclick="slideShuffleAll()">Xáo lại ⏭</button>
-      <button class="btn small alt" onclick="slideQrCycle()">📍 QR: ${SLIDE_QR_CORNERS[slide.qrCorner]}</button>
-      <button class="btn small alt" onclick="slideQrToggle()">${slide.qrHidden ? "👁 Hiện QR" : "🙈 Ẩn QR"}</button>
-      <button class="btn small danger" onclick="slideExit()">✖ Thoát Slideshow</button>
-      <span class="sub">Bố cục tự xáo lại mỗi 10 giây · Bấm phím ← → cũng xáo được</span>
-    </div>`;
+  </div>`;
 }
-document.addEventListener("keydown", e => {
+window.addEventListener("resize", () => {
   if (!host.cloudSlide) return;
-  const t = e.target;
-  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
-  if (e.key === "ArrowLeft" || e.key === "ArrowRight") slideShuffleAll();
+  const a = slideAreaSize();
+  if (Math.abs(a.w - slide.areaW) > 4 || Math.abs(a.h - slide.areaH) > 4) hostRender();
 });
+
 async function cloudSetPrompt() {
   const v = $("cloudPromptInput").value.trim();
   if (!v || !host.room) return;
