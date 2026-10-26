@@ -502,7 +502,7 @@ const DB = {
       window.addEventListener("storage", (e) => { if (e.key === this.localKey) this._fireAll(); });
     }
     const b = document.getElementById("connBadge"), t = document.getElementById("connTxt");
-    if (this.mode === "firebase") { t.textContent = "REALTIME · FIREBASE"; }
+    if (this.mode === "firebase") { t.textContent = "REALTIME"; }
     else { b.classList.add("demo"); t.textContent = "DEMO 1 MÁY · CHƯA KẾT NỐI FIREBASE"; }
   },
   _localAll() { try { return JSON.parse(localStorage.getItem(this.localKey)) || {}; } catch (e) { return {}; } },
