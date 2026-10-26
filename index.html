@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
@@ -205,6 +206,9 @@ body.joinmode nav.tabs{display:none!important}
 .rank-banner{margin:16px auto 2px;max-width:520px;border-radius:16px;padding:13px 18px;font-weight:700;font-size:16px;background:var(--soft);border:2px solid var(--line)}
 .rank-banner .rk{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-size:22px;color:var(--purple)}
 .rank-banner.first{background:linear-gradient(135deg,#FFF3C4,#FFE97A);border-color:#FFC93C;color:#7A4A00;animation:pulse .6s ease 2}
+/* ==== Tài khoản Admin & phân quyền ==== */
+table.lb td .btn{margin:2px 0}
+.super-badge{background:linear-gradient(135deg,#FFE97A,#FFA602);color:#7A4A00;border-color:#FFC93C}
 /* ==== Sân khấu vinh danh từng giải (podium) khi kết thúc ván ==== */
 .pod-reveal{display:flex;flex-direction:column;align-items:center;gap:12px;margin:20px 0 8px}
 .pod-card{border-radius:20px;padding:16px 34px;text-align:center;min-width:min(430px,84vw);border:3px solid #fff;box-shadow:0 14px 34px rgba(70,23,143,.15);animation:rise .5s ease both}
@@ -267,16 +271,55 @@ body.joinmode nav.tabs{display:none!important}
   <section id="view-admin" class="hidden">
     <div id="admin-lock" class="card">
       <h2>🔐 Khu vực Admin</h2>
-      <div class="sub">Khu vực này chỉ dành cho quản trị viên: mở phòng & điều khiển trò chơi (MC), và chăm sóc các bộ câu hỏi. Người chơi không vào được khu này đâu nhé.</div>
-      <label>Mật khẩu quản trị</label>
-      <input type="password" id="adminPass" placeholder="Mật khẩu quản trị" onkeydown="if(event.key==='Enter')adminLogin()">
-      <div style="margin-top:14px"><button class="btn" onclick="adminLogin()">Vào khu Admin</button></div>
+      <div class="sub">Khu vực này chỉ dành cho quản trị viên có tài khoản riêng: mở phòng & điều khiển trò chơi (MC), và chăm sóc các bộ câu hỏi của chính mình. Người chơi không vào được khu này đâu nhé.</div>
+      <div id="authLoading" class="sub" style="margin-top:12px">⏳ Đang kiểm tra đăng nhập…</div>
+      <div id="authForms" class="hidden">
+        <div class="hostbar" style="margin:12px 0 2px">
+          <button class="btn small" id="authTabLogin" onclick="authShowTab('login')">Đăng nhập</button>
+          <button class="btn small alt" id="authTabRegister" onclick="authShowTab('register')">Đăng ký tài khoản</button>
+        </div>
+        <div id="authLoginForm">
+          <label>Email</label>
+          <input type="text" id="authEmail" placeholder="VD: mc@team.vn" autocomplete="username">
+          <label>Mật khẩu</label>
+          <input type="password" id="authPass" placeholder="Mật khẩu tài khoản" autocomplete="current-password" onkeydown="if(event.key==='Enter')authLogin()">
+          <div style="margin-top:14px"><button class="btn" onclick="authLogin()">Đăng nhập</button></div>
+          <p class="sub" style="margin-top:10px"><a href="#" onclick="authForgot();return false;">Quên mật khẩu?</a> — nhập email ở trên rồi bấm vào đây, hệ thống sẽ gửi email đặt lại mật khẩu cho bạn.</p>
+        </div>
+        <div id="authRegisterForm" class="hidden">
+          <label>Tên hiển thị</label>
+          <input type="text" id="regName" placeholder="VD: Minh Anh" maxlength="40">
+          <label>Email</label>
+          <input type="text" id="regEmail" placeholder="VD: mc@team.vn" autocomplete="email">
+          <label>Mật khẩu (ít nhất 6 ký tự)</label>
+          <input type="password" id="regPass" placeholder="Mật khẩu tài khoản" autocomplete="new-password" onkeydown="if(event.key==='Enter')authRegister()">
+          <div style="margin-top:14px"><button class="btn" onclick="authRegister()">Đăng ký</button></div>
+          <p class="sub" style="margin-top:10px">Tài khoản mới cần được <b>Quản lý chính</b> duyệt mới vào được khu Admin — đăng ký xong bạn chờ duyệt một chút nhé.</p>
+        </div>
+      </div>
+      <div id="claimSuperBox" class="hidden" style="margin-top:18px;border-top:2px dashed var(--line);padding-top:14px">
+        <h3 style="margin-top:0">👑 Thiết lập tài khoản Quản lý chính</h3>
+        <div class="sub">Hệ thống chưa có Quản lý chính. Nếu bạn là chủ trang, nhập đúng <b>mật khẩu quản trị hiện tại</b> (biến <span class="kbd">ADMIN_PASSWORD</span> ở đầu file) rồi tạo tài khoản cho mình — tài khoản này sẽ là <b>Quản lý chính</b>, có quyền duyệt / khóa các tài khoản Admin khác.</div>
+        <label>Mật khẩu quản trị hiện tại</label>
+        <input type="password" id="claimPass" placeholder="Mật khẩu quản trị">
+        <label>Tên hiển thị</label>
+        <input type="text" id="claimName" placeholder="Tên của Quản lý chính" maxlength="40">
+        <label>Email</label>
+        <input type="text" id="claimEmail" placeholder="Email của Quản lý chính">
+        <label>Mật khẩu tài khoản mới (ít nhất 6 ký tự)</label>
+        <input type="password" id="claimNewPass" placeholder="Mật khẩu tài khoản">
+        <div style="margin-top:14px"><button class="btn" onclick="authClaimSuper()">👑 Tạo tài khoản Quản lý chính</button></div>
+      </div>
+      <div id="authBlocked" class="hidden" style="margin-top:14px">
+        <div id="authBlockedMsg"></div>
+        <div style="margin-top:12px"><button class="btn alt" onclick="authLogout()">Đăng xuất</button></div>
+      </div>
       <div id="adminMsg"></div>
     </div>
     <div id="admin-panel" class="hidden">
       <div class="row" style="margin-top:4px">
-        <div><span class="pill">👋 Xin chào Admin! Bạn đang ở khu điều khiển trò chơi.</span></div>
-        <div class="fix"><button class="btn small alt" onclick="adminLogout()">Đăng xuất</button></div>
+        <div><span class="pill" id="adminWho">👋 Xin chào Admin! Bạn đang ở khu điều khiển trò chơi.</span></div>
+        <div class="fix"><button class="btn small alt" onclick="authLogout()">Đăng xuất</button></div>
       </div>
       <div class="card" id="audio-panel">
         <h2>🎵 Nhạc &amp; hiệu ứng âm thanh</h2>
@@ -299,6 +342,18 @@ body.joinmode nav.tabs{display:none!important}
           <button class="btn alt" onclick="sfxVictory()">▶ Nghe thử: Vinh danh</button>
         </div>
         <div class="sub">Nhạc nền tự phát khi mở phòng (ở sảnh chờ) và tự nhỏ xuống 40% khi đang chạy câu hỏi để không át tiếng MC. Trên màn hình chiếu cũng có nút bật/tắt nhạc và thanh chỉnh âm lượng nhanh.</div>
+      </div>
+      <div id="super-panel" class="card hidden">
+        <span class="mode-tag" style="background:var(--purple)">Quản lý chính</span>
+        <h2>👑 Quản lý tài khoản Admin</h2>
+        <div class="sub">Chỉ Quản lý chính thấy mục này: duyệt tài khoản mới đăng ký, khóa tài khoản không còn dùng, hoặc thu hồi quyền Admin (đưa tài khoản về trạng thái chờ duyệt).</div>
+        <div id="superAdminList" style="margin-top:10px"></div>
+      </div>
+      <div id="rooms-panel" class="card hidden">
+        <span class="mode-tag" style="background:var(--purple2)">Phòng game</span>
+        <h2>🎮 Phòng đang mở</h2>
+        <div class="sub">Danh sách phòng đang mở mà bạn được điều khiển — bấm “Màn hình chiếu” để điều khiển phòng, hoặc “Đóng phòng” khi đã xong.</div>
+        <div id="roomsList" style="margin-top:10px"></div>
       </div>
       <div id="host-active" class="card hidden" style="background:var(--soft)"></div>
       <div id="host-create" class="card mode-quiz">
@@ -411,7 +466,9 @@ Cần cải thiện</textarea>
       (đồng bộ giữa các tab cùng 1 trình duyệt để test thử).
       Khi đã điền config + deploy lên Vercel: chơi thật qua
       nhiều điện thoại, đồng bộ realtime như trang mẫu.
-   2) ADMIN_PASSWORD: mật khẩu vào trang Quản trị câu hỏi.
+   2) ADMIN_PASSWORD: mật khẩu quản trị gốc — chỉ còn dùng 1 lần để
+      "Thiết lập tài khoản Quản lý chính" khi hệ thống tài khoản
+      Firebase chưa có Quản lý chính (xem HUONG-DAN.md).
    ============================================================ */
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyC4sX_HStoI-08tnziNJUtZeBEj_eAHgVE",
@@ -430,7 +487,9 @@ const DB = {
   mode: "local", fb: null,
   localKey: "dovui_online_local_v1", bc: null, listeners: [],
   init() {
-    if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL && window.firebase) {
+    let forceDemo = false;
+    try { forceDemo = /[?&]demo=1/.test(location.search) || localStorage.getItem("dovui_demo") === "1"; } catch (e) {}
+    if (!forceDemo && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL && window.firebase) {
       try {
         firebase.initializeApp(FIREBASE_CONFIG);
         this.fb = firebase.database();
@@ -499,10 +558,34 @@ const SEED_SETS = [
     { q: "Một tư vấn viên chuyên nghiệp cần ưu tiên điều gì?", a: ["Bán gói phí cao nhất", "Hiểu sản phẩm, tư vấn trung thực theo nhu cầu", "Chốt thật nhanh trước khi khách đổi ý", "Chỉ bán cho người quen"], correct: 1, time: 15 }
   ]}
 ];
-async function seedIfEmpty() {
-  const sets = await DB.get("sets");
-  if (sets && Object.keys(sets).length) return;
-  for (const s of SEED_SETS) await DB.set("sets/" + uid(), Object.assign({ createdAt: Date.now() }, s));
+/* ---------- Phân quyền: bộ câu hỏi nằm trong namespace riêng của từng Admin ---------- */
+function curUid() { return (typeof window !== "undefined" && window.AUTH && window.AUTH.user) ? window.AUTH.user.uid : null; }
+function mySetsPath() { return "users/" + (curUid() || "_none") + "/sets"; }
+/* Khi Admin đăng nhập: bảo đảm namespace bộ câu hỏi của họ đã sẵn sàng.
+   - Quản lý chính: nếu còn bộ câu hỏi ở đường dẫn cũ (dovui/sets) thì sao chép
+     sang namespace của mình (KHÔNG xóa bản cũ); chưa có gì thì nạp 2 bộ mẫu.
+   - Admin thường: bắt đầu với namespace trống, tự tạo bộ của mình. */
+async function ensureMySets() {
+  const A = (typeof window !== "undefined" && window.AUTH) ? window.AUTH : null;
+  if (!A || !A.user || !A.profile) return;
+  const myId = A.user.uid;
+  try {
+    const flag = await DB.get("users/" + myId + "/_meta/setsEnsured");
+    if (flag) return;
+    const mine = await DB.get("users/" + myId + "/sets");
+    if (!mine || !Object.keys(mine).length) {
+      if (A.profile.role === "super") {
+        let old = null;
+        try { old = await DB.get("sets"); } catch (e) { old = null; }
+        if (old && Object.keys(old).length) {
+          for (const [id, s] of Object.entries(old)) await DB.set("users/" + myId + "/sets/" + id, s);
+        } else {
+          for (const s of SEED_SETS) await DB.set("users/" + myId + "/sets/" + uid(), Object.assign({ createdAt: Date.now() }, s));
+        }
+      }
+    }
+    await DB.set("users/" + myId + "/_meta/setsEnsured", true);
+  } catch (e) { console.warn("ensureMySets:", e); }
 }
 
 /* ---------- Tiện ích ---------- */
@@ -570,7 +653,7 @@ function startTimer(getRemain, onTick) {
 let host = { code: null, room: null };
 async function hostInit() {
   const pick = $("hostSetPick");
-  const off = DB.on("sets", sets => {
+  const off = DB.on(mySetsPath(), sets => {
     const cur = pick.value;
     pick.innerHTML = "";
     Object.entries(sets || {}).forEach(([id, s]) => {
@@ -581,7 +664,7 @@ async function hostInit() {
     if (cur) pick.value = cur;
     if (!pick.options.length) pick.innerHTML = "<option value=''>— Chưa có bộ câu hỏi —</option>";
   });
-  unsubs.push(off);
+  unsubs.push(off); if (typeof adminSubs !== "undefined") adminSubs.push(off);
   const cc = $("cloud-create"), ha = $("host-active"), vc = $("vote-create");
   if (host.code) {
     $("host-create").classList.add("hidden"); if (cc) cc.classList.add("hidden"); if (vc) vc.classList.add("hidden");
@@ -594,7 +677,7 @@ async function hostInit() {
 async function hostCreateRoom() {
   const setId = $("hostSetPick").value;
   if (!setId) { alert("Chưa có bộ câu hỏi nào cả. Bạn vào mục Quản trị tạo một bộ trước nhé!"); return; }
-  const set = await DB.get("sets/" + setId);
+  const set = await DB.get(mySetsPath() + "/" + setId);
   if (!set || !(set.questions || []).length) { alert("Bộ câu hỏi này đang trống trơn. Bạn thêm câu hỏi vào trước nhé!"); return; }
   let code = roomCode();
   if (await DB.get("rooms/" + code)) code = roomCode();
@@ -603,7 +686,7 @@ async function hostCreateRoom() {
     setId, setName: set.name,
     questions: set.questions,
     status: "lobby", qIndex: 0, qStartedAt: 0,
-    createdAt: Date.now(), players: {}
+    createdAt: Date.now(), ownerUid: curUid(), players: {}
   };
   await DB.set("rooms/" + code, room);
   host.code = code;
@@ -850,31 +933,303 @@ async function playerAnswer(choice) {
 
 <script>
 /* ================= QUẢN TRỊ ================= */
-let adminAuthed = sessionStorage.getItem("dovui_admin") === "1";
+let adminAuthed = false;
 let admin = { sets: {}, editingId: null };
+let adminRooms = {};
+let allAdmins = {};
+let adminSubs = [];
+
+/* ================= TÀI KHOẢN ADMIN =================
+   - Khi đã kết nối Firebase: dùng Firebase Authentication (Email/Password) thật.
+   - Chế độ demo 1 máy (chưa có Firebase): giả lập tài khoản ngay trong trình
+     duyệt bằng localStorage để test thử; hồ sơ Admin vẫn lưu qua lớp DB
+     (dovui/admins/{uid}) giống hệt bản Firebase. */
+const AUTH = {
+  mode: "local", user: null, profile: null, ready: false, superUid: undefined,
+  _fbUser: null, _localUid: null, _profileOff: null, _creatingProfile: false, _claiming: false, _pendingName: "", _localName: "",
+  init() {
+    if (DB.mode === "firebase" && window.firebase && typeof firebase.auth === "function") {
+      this.mode = "firebase";
+      try { firebase.auth().onAuthStateChanged(u => { this._fbUser = u || null; this._syncFromAuth(); }); }
+      catch (e) { console.warn("Firebase Auth lỗi, dùng demo nội bộ:", e); this.mode = "local"; }
+    }
+    if (this.mode === "local") {
+      try { this._localUid = localStorage.getItem("dovui_local_session") || null; } catch (e) { this._localUid = null; }
+      setTimeout(() => this._syncFromAuth(), 20);
+    }
+    DB.on("config/superUid", v => { this.superUid = v || null; if (typeof adminAuthRender === "function") adminAuthRender(); });
+  },
+  _localCreds() { try { return JSON.parse(localStorage.getItem("dovui_local_creds") || "{}"); } catch (e) { return {}; } },
+  _localSaveCreds(c) { try { localStorage.setItem("dovui_local_creds", JSON.stringify(c)); } catch (e) {} },
+  _hash(s) { let h = 5381; s = String(s || ""); for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return "h" + (h >>> 0).toString(36); },
+  _setLocalSession(id) {
+    this._localUid = id;
+    try { if (id) localStorage.setItem("dovui_local_session", id); else localStorage.removeItem("dovui_local_session"); } catch (e) {}
+  },
+  async createAccount(email, pass, displayName) {
+    email = String(email || "").trim();
+    this._pendingName = displayName || "";
+    if (this.mode === "firebase") {
+      const cred = await firebase.auth().createUserWithEmailAndPassword(email, pass);
+      try { await cred.user.updateProfile({ displayName: displayName || "" }); } catch (e) {}
+      return cred.user.uid;
+    }
+    const creds = this._localCreds(), key = email.toLowerCase();
+    if (!key || !pass) { const e = new Error("invalid"); e.code = "auth/invalid-email"; throw e; }
+    if (creds[key]) { const e = new Error("in-use"); e.code = "auth/email-already-in-use"; throw e; }
+    const id = uid();
+    creds[key] = { uid: id, pass: this._hash(pass), name: displayName || "" };
+    this._localSaveCreds(creds);
+    this._setLocalSession(id);
+    this._syncFromAuth();
+    return id;
+  },
+  async signIn(email, pass) {
+    email = String(email || "").trim();
+    if (this.mode === "firebase") { await firebase.auth().signInWithEmailAndPassword(email, pass); return; }
+    const creds = this._localCreds(), rec = creds[email.toLowerCase()];
+    if (!rec || rec.pass !== this._hash(pass)) { const e = new Error("bad-credential"); e.code = "auth/invalid-credential"; throw e; }
+    this._localName = rec.name || "";
+    this._setLocalSession(rec.uid);
+    this._syncFromAuth();
+  },
+  async signOut() {
+    if (this.mode === "firebase") { try { await firebase.auth().signOut(); } catch (e) {} return; }
+    this._setLocalSession(null);
+    this._syncFromAuth();
+  },
+  async resetPassword(email) {
+    if (this.mode === "firebase") { await firebase.auth().sendPasswordResetEmail(String(email || "").trim()); return "firebase"; }
+    return "local";
+  },
+  _syncFromAuth() {
+    let id = null, email = "";
+    if (this.mode === "firebase") { const u = this._fbUser; if (u) { id = u.uid; email = u.email || ""; } }
+    else if (this._localUid) {
+      id = this._localUid;
+      const creds = this._localCreds();
+      const rec = Object.entries(creds).find(([, r]) => r.uid === id);
+      if (rec) { email = rec[0]; if (!this._localName) this._localName = rec[1].name || ""; }
+    }
+    if (this._profileOff) { try { this._profileOff(); } catch (e) {} this._profileOff = null; }
+    if (!id) { this.user = null; this.profile = null; this.ready = true; onAuthChanged(); return; }
+    this.user = { uid: id, email: email || "" };
+    this._profileOff = DB.on("admins/" + id, p => {
+      if (!p) {
+        if (!this._creatingProfile && !this._claiming) {
+          this._creatingProfile = true;
+          DB.set("admins/" + id, { email: this.user.email, displayName: this._pendingName || this._localName || "", role: "pending", disabled: false, createdAt: Date.now() })
+            .then(() => { this._creatingProfile = false; })
+            .catch(() => { this._creatingProfile = false; });
+        }
+        return;
+      }
+      this.profile = p; this.ready = true; onAuthChanged();
+    });
+  }
+};
+window.AUTH = AUTH;
+
+function onAuthChanged() {
+  adminAuthed = !!(AUTH.user && AUTH.profile && !AUTH.profile.disabled && (AUTH.profile.role === "admin" || AUTH.profile.role === "super"));
+  updateChrome();
+  adminAuthRender();
+  const v = $("view-admin");
+  if (v && !v.classList.contains("hidden")) adminInit();
+}
+function adminAuthRender() {
+  const lock = $("admin-lock"), panel = $("admin-panel");
+  if (!lock || !panel) return;
+  const loading = $("authLoading"), forms = $("authForms"), blocked = $("authBlocked"), claim = $("claimSuperBox");
+  if (claim) claim.classList.toggle("hidden", !(AUTH.superUid === null && !adminAuthed));
+  if (!AUTH.ready) {
+    lock.classList.remove("hidden"); panel.classList.add("hidden");
+    if (loading) loading.classList.remove("hidden");
+    if (forms) forms.classList.add("hidden");
+    if (blocked) blocked.classList.add("hidden");
+    return;
+  }
+  if (loading) loading.classList.add("hidden");
+  const u = AUTH.user, p = AUTH.profile;
+  if (!u) {
+    lock.classList.remove("hidden"); panel.classList.add("hidden");
+    if (forms) forms.classList.remove("hidden");
+    if (blocked) blocked.classList.add("hidden");
+    return;
+  }
+  if (p && p.disabled) {
+    lock.classList.remove("hidden"); panel.classList.add("hidden");
+    if (forms) forms.classList.add("hidden");
+    if (blocked) blocked.classList.remove("hidden");
+    $("authBlockedMsg").innerHTML = "<div class='msg err'>🔒 Tài khoản <b>" + esc(u.email) + "</b> đang bị Quản lý chính khóa nên chưa vào được khu Admin. Bạn liên hệ Quản lý chính để được mở lại nhé.</div>";
+    return;
+  }
+  if (!p || p.role === "pending") {
+    lock.classList.remove("hidden"); panel.classList.add("hidden");
+    if (forms) forms.classList.add("hidden");
+    if (blocked) blocked.classList.remove("hidden");
+    $("authBlockedMsg").innerHTML = "<div class='msg okm'>⏳ Xin chào <b>" + esc((p && p.displayName) || u.email) + "</b>! Tài khoản của bạn đang <b>chờ Quản lý chính duyệt</b>. Khi được duyệt, bạn quay lại đây là vào được khu Admin ngay nhé.</div>";
+    return;
+  }
+  lock.classList.add("hidden"); panel.classList.remove("hidden");
+  if (blocked) blocked.classList.add("hidden");
+  const who = $("adminWho");
+  if (who) who.innerHTML = "👋 Xin chào <b>" + esc(p.displayName || u.email) + "</b> · " + (p.role === "super" ? "👑 Quản lý chính" : "🛠️ Admin") + " · " + esc(u.email);
+}
+function authShowTab(which) {
+  $("authLoginForm").classList.toggle("hidden", which !== "login");
+  $("authRegisterForm").classList.toggle("hidden", which !== "register");
+  $("authTabLogin").className = "btn small" + (which === "login" ? "" : " alt");
+  $("authTabRegister").className = "btn small" + (which === "register" ? "" : " alt");
+}
+function authMsg(html) { const m = $("adminMsg"); if (m) m.innerHTML = html || ""; }
+function authErrMsg(e) {
+  const code = (e && e.code) || "";
+  if (code === "auth/operation-not-allowed") return "⚠️ Đăng nhập bằng Email/Mật khẩu <b>chưa được bật</b> cho project này. Quản lý chính vào <b>Firebase Console → Build → Authentication → Sign-in method</b> → bật <b>Email/Password</b> → Save, rồi quay lại đăng nhập nhé (có hướng dẫn trong HUONG-DAN.md).";
+  if (code === "auth/email-already-in-use") return "Email này đã có tài khoản rồi — bạn chuyển sang tab Đăng nhập nhé.";
+  if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") return "Email hoặc mật khẩu chưa đúng rồi — bạn kiểm tra lại nhé.";
+  if (code === "auth/invalid-email") return "Email chưa đúng định dạng rồi — bạn xem lại nhé.";
+  if (code === "auth/weak-password") return "Mật khẩu hơi ngắn — cần ít nhất 6 ký tự bạn nhé.";
+  if (code === "auth/too-many-requests") return "Bạn thử đăng nhập hơi nhiều lần rồi — nghỉ vài phút rồi thử lại nhé.";
+  if (code === "auth/network-request-failed") return "Mạng đang chập chờn, chưa gọi được máy chủ đăng nhập — bạn thử lại sau giây lát nhé.";
+  if (code === "auth/user-disabled") return "Tài khoản này đã bị vô hiệu hóa ở phía Firebase. Bạn liên hệ Quản lý chính nhé.";
+  return "Có lỗi xảy ra: " + esc((e && e.message) || e || "không rõ") + " — bạn thử lại nhé.";
+}
+async function authLogin() {
+  const email = $("authEmail").value.trim(), pass = $("authPass").value;
+  if (!email || !pass) { authMsg("<div class='msg err'>Bạn nhập email và mật khẩu trước nhé.</div>"); return; }
+  authMsg("<div class='msg okm'>⏳ Đang đăng nhập…</div>");
+  try { await AUTH.signIn(email, pass); authMsg(""); }
+  catch (e) { authMsg("<div class='msg err'>" + authErrMsg(e) + "</div>"); }
+}
+async function authRegister() {
+  const name = $("regName").value.trim(), email = $("regEmail").value.trim(), pass = $("regPass").value;
+  if (!email || !pass) { authMsg("<div class='msg err'>Bạn nhập email và mật khẩu trước nhé.</div>"); return; }
+  if (pass.length < 6) { authMsg("<div class='msg err'>Mật khẩu cần ít nhất 6 ký tự bạn nhé.</div>"); return; }
+  authMsg("<div class='msg okm'>⏳ Đang tạo tài khoản…</div>");
+  try {
+    await AUTH.createAccount(email, pass, name);
+    authMsg("<div class='msg okm'>🎉 Đăng ký thành công! Tài khoản của bạn đang chờ Quản lý chính duyệt — được duyệt xong là vào khu Admin được ngay.</div>");
+  } catch (e) { authMsg("<div class='msg err'>" + authErrMsg(e) + "</div>"); }
+}
+async function authForgot() {
+  const email = $("authEmail").value.trim();
+  if (!email) { authMsg("<div class='msg err'>Bạn nhập email vào ô Email ở trên trước, rồi bấm Quên mật khẩu nhé.</div>"); return; }
+  try {
+    const how = await AUTH.resetPassword(email);
+    if (how === "local") authMsg("<div class='msg okm'>Trang đang ở chế độ demo trên 1 máy nên chưa gửi được email thật. Khi deploy với Firebase, email đặt lại mật khẩu sẽ tự gửi đến <b>" + esc(email) + "</b>.</div>");
+    else authMsg("<div class='msg okm'>📧 Đã gửi email đặt lại mật khẩu đến <b>" + esc(email) + "</b> — bạn mở hộp thư (kiểm tra cả mục Spam) và làm theo hướng dẫn trong mail nhé.</div>");
+  } catch (e) { authMsg("<div class='msg err'>" + authErrMsg(e) + "</div>"); }
+}
+async function authClaimSuper() {
+  if ($("claimPass").value !== ADMIN_PASSWORD) { authMsg("<div class='msg err'>Mật khẩu quản trị chưa đúng rồi — đó là mật khẩu ở biến ADMIN_PASSWORD đầu file.</div>"); return; }
+  const name = $("claimName").value.trim(), email = $("claimEmail").value.trim(), pass = $("claimNewPass").value;
+  if (!email || pass.length < 6) { authMsg("<div class='msg err'>Bạn nhập email và mật khẩu tài khoản (ít nhất 6 ký tự) nhé.</div>"); return; }
+  AUTH._claiming = true;
+  authMsg("<div class='msg okm'>⏳ Đang thiết lập tài khoản Quản lý chính…</div>");
+  try {
+    const newId = await AUTH.createAccount(email, pass, name);
+    const taken = await DB.get("config/superUid");
+    if (taken && taken !== newId) {
+      AUTH._claiming = false;
+      authMsg("<div class='msg err'>Hệ thống đã có Quản lý chính rồi nên không thiết lập thêm được. Tài khoản bạn vừa tạo sẽ ở trạng thái chờ duyệt.</div>");
+      return;
+    }
+    await DB.set("config/superUid", newId);
+    await DB.set("admins/" + newId, { email, displayName: name, role: "super", disabled: false, createdAt: Date.now() });
+    AUTH._claiming = false;
+    AUTH._syncFromAuth();
+    authMsg("<div class='msg okm'>👑 Xong! Tài khoản <b>" + esc(email) + "</b> đã là Quản lý chính. Từ giờ bạn duyệt / khóa các tài khoản Admin khác ngay trong khu Admin.</div>");
+  } catch (e) { AUTH._claiming = false; authMsg("<div class='msg err'>" + authErrMsg(e) + "</div>"); }
+}
+async function authLogout() {
+  await AUTH.signOut();
+  admin.sets = {}; admin.editingId = null; adminRooms = {}; allAdmins = {};
+  adminAuthRender();
+}
+
+/* ---------- Panel Quản lý chính (chỉ super) ---------- */
+function superRender() {
+  const box = $("superAdminList"); if (!box) return;
+  const entries = Object.entries(allAdmins || {}).sort((a, b) => (a[1].createdAt || 0) - (b[1].createdAt || 0));
+  if (!entries.length) { box.innerHTML = "<p class='sub'>Chưa có tài khoản nào.</p>"; return; }
+  const roleLabel = p => p.disabled ? "🔒 Đã khóa" : p.role === "super" ? "👑 Quản lý chính" : p.role === "admin" ? "✅ Admin" : "⏳ Chờ duyệt";
+  box.innerHTML = `<table class="lb"><tr><th>Tài khoản</th><th>Trạng thái</th><th class="r">Thao tác</th></tr>` + entries.map(([id, p]) => {
+    const isMe = AUTH.user && id === AUTH.user.uid;
+    const when = p.createdAt ? new Date(p.createdAt).toLocaleDateString("vi-VN") : "";
+    let acts = "";
+    if (isMe) acts = "<span class='sub'>(tài khoản của bạn)</span>";
+    else {
+      if (p.role === "pending") acts += `<button class="btn small" onclick="superSetRole('${id}','admin')">✅ Duyệt</button> `;
+      if (p.role === "admin") acts += `<button class="btn small alt" onclick="superSetRole('${id}','pending')">↩ Thu hồi quyền</button> `;
+      if (p.role !== "super") acts += p.disabled
+        ? `<button class="btn small alt" onclick="superSetDisabled('${id}',false)">🔓 Mở khóa</button>`
+        : `<button class="btn small danger" onclick="superSetDisabled('${id}',true)">🔒 Khóa</button>`;
+    }
+    return `<tr><td><b>${esc(p.displayName || p.email || id)}</b><br><span class="sub">${esc(p.email || "")}${when ? " · tạo " + when : ""}</span></td><td>${roleLabel(p)}</td><td class="r">${acts}</td></tr>`;
+  }).join("") + `</table>`;
+}
+async function superSetRole(id, role) {
+  if (AUTH.user && id === AUTH.user.uid) return;
+  await DB.update("admins/" + id, { role });
+}
+async function superSetDisabled(id, dis) {
+  if (AUTH.user && id === AUTH.user.uid) return;
+  if (dis && !confirm("Khóa tài khoản này? Họ sẽ không vào được khu Admin và không ghi được dữ liệu nữa.")) return;
+  await DB.update("admins/" + id, { disabled: !!dis });
+}
+
+/* ---------- Danh sách phòng theo quyền sở hữu ---------- */
+function roomsRender() {
+  const box = $("roomsList"); if (!box) return;
+  const myId = curUid();
+  const isSuper = !!(AUTH.profile && AUTH.profile.role === "super");
+  const entries = Object.entries(adminRooms || {}).filter(([, r]) => r && typeof r === "object");
+  const vis = entries.filter(([, r]) => isSuper || r.ownerUid === myId);
+  if (!vis.length) { box.innerHTML = "<p class='sub'>Chưa có phòng nào đang mở" + (isSuper ? "." : " của bạn.") + "</p>"; return; }
+  const typeLabel = r => r.type === "cloud" ? "☁️ Đám mây chữ" : r.type === "vote" ? "🗳️ Bình chọn" : "🎯 Trắc nghiệm";
+  box.innerHTML = vis.map(([code, r]) => {
+    const owner = !r.ownerUid ? "Phòng cũ (chưa có chủ)" : r.ownerUid === myId ? "Bạn" : (allAdmins[r.ownerUid] ? (allAdmins[r.ownerUid].displayName || allAdmins[r.ownerUid].email) : "Admin khác");
+    const mine = host.code === code;
+    return `<div class="row" style="border-bottom:1.5px solid var(--line);padding:9px 0">
+      <div><b>${esc(code)}</b> · ${typeLabel(r)} · ${esc(r.name || r.prompt || r.question || "")}<br><span class="sub">Chủ phòng: ${esc(owner)}${mine ? " · 📺 đang ở màn hình chiếu của máy này" : ""}</span></div>
+      <div class="fix"><button class="btn small" onclick="roomTakeControl('${code}')">📺 Màn hình chiếu</button>
+      <button class="btn small danger" onclick="roomClose('${code}')">Đóng phòng</button></div>
+    </div>`;
+  }).join("");
+}
+function roomTakeControl(code) {
+  const r = adminRooms[code]; if (!r) return;
+  host.code = code; host.room = r;
+  window.STAGE_MODE = "room";
+  go("stage");
+}
+async function roomClose(code) {
+  if (!confirm("Đóng phòng " + code + "? Người chơi trong phòng sẽ bị thoát ra.")) return;
+  if (host.code === code) { await hostReset(false); return; }
+  await DB.remove("rooms/" + code);
+}
+
 function adminInit() {
   updateChrome();
-  $("admin-lock").classList.toggle("hidden", adminAuthed);
-  $("admin-panel").classList.toggle("hidden", !adminAuthed);
+  adminAuthRender();
+  adminSubs.forEach(u => { try { u(); } catch (e) {} }); adminSubs = [];
   if (!adminAuthed) return;
   hostInit();
   if (typeof audioInit === "function") audioInit();
-  const off = DB.on("sets", sets => { admin.sets = sets || {}; adminRender(); });
-  unsubs.push(off);
-}
-function adminLogout() {
-  adminAuthed = false;
-  sessionStorage.removeItem("dovui_admin");
-  location.reload();
-}
-function adminLogin() {
-  if ($("adminPass").value === ADMIN_PASSWORD) {
-    adminAuthed = true; sessionStorage.setItem("dovui_admin", "1");
-    $("adminMsg").innerHTML = ""; updateChrome(); adminInit();
-  } else {
-    $("adminMsg").innerHTML = "<div class='msg err'>Mật khẩu chưa đúng rồi — bạn thử lại nhé.</div>";
+  const off = DB.on(mySetsPath(), sets => { admin.sets = sets || {}; adminRender(); });
+  unsubs.push(off); adminSubs.push(off);
+  const offR = DB.on("rooms", rooms => { adminRooms = rooms || {}; roomsRender(); });
+  unsubs.push(offR); adminSubs.push(offR);
+  const sp = $("super-panel"); if (sp) sp.classList.toggle("hidden", !(AUTH.profile && AUTH.profile.role === "super"));
+  const rp = $("rooms-panel"); if (rp) rp.classList.remove("hidden");
+  if (AUTH.profile && AUTH.profile.role === "super") {
+    const offA = DB.on("admins", list => { allAdmins = list || {}; superRender(); roomsRender(); });
+    unsubs.push(offA); adminSubs.push(offA);
   }
+  ensureMySets();
 }
+
 function adminRender() {
   const panel = $("admin-qpanel");
   const list = Object.entries(admin.sets).map(([id, s]) => `
@@ -899,7 +1254,7 @@ function adminRender() {
   }
   panel.innerHTML = `
     <div class="card mode-quiz"><span class="mode-tag">Trắc nghiệm · Bộ câu hỏi</span><h2>🗂️ Chăm sóc bộ câu hỏi</h2>
-      <div class="sub">Mọi bộ câu hỏi đều được lưu trên máy chủ — MC mở phòng ở máy nào cũng thấy. Mật khẩu quản trị đổi ở biến <span class="kbd">ADMIN_PASSWORD</span> đầu file.</div>
+      <div class="sub">Bộ câu hỏi được lưu trên máy chủ, gắn với tài khoản của bạn — mỗi Admin chỉ thấy và sửa được bộ câu hỏi của riêng mình, mở phòng ở máy nào cũng thấy.</div>
       <div class="hostbar">
         <button class="btn" onclick="adminNew()">+ Tạo bộ mới</button>
         <button class="btn alt" onclick="adminTemplate()">⬇️ Tải file Excel mẫu</button>
@@ -942,12 +1297,12 @@ async function adminSave() {
   const msg = $("saveMsg");
   if (!name) { msg.innerHTML = "<div class='msg err'>Bạn chưa đặt tên cho bộ câu hỏi rồi.</div>"; return; }
   if (!questions.length) { msg.innerHTML = "<div class='msg err'>Cần ít nhất 1 câu hỏi điền đầy đủ (câu hỏi + đủ 4 đáp án) bạn nhé.</div>"; return; }
-  await DB.set("sets/" + admin.editingId, { name, questions, updatedAt: Date.now() });
+  await DB.set(mySetsPath() + "/" + admin.editingId, { name, questions, updatedAt: Date.now() });
   msg.innerHTML = "<div class='msg okm'>✅ Đã lưu bộ “" + esc(name) + "” — " + questions.length + " câu.</div>";
 }
 function adminNew() { const id = uid(); admin.sets[id] = { name: "", questions: [{ q: "", a: ["", "", "", ""], correct: 0, time: 15 }] }; admin.editingId = id; adminRender(); }
 function adminEdit(id) { admin.editingId = id; adminRender(); window.scrollTo({ top: 0, behavior: "smooth" }); }
-async function adminDelete(id) { if (!confirm("Bạn chắc chắn muốn xóa hẳn bộ câu hỏi này không?")) return; await DB.remove("sets/" + id); if (admin.editingId === id) admin.editingId = null; }
+async function adminDelete(id) { if (!confirm("Bạn chắc chắn muốn xóa hẳn bộ câu hỏi này không?")) return; await DB.remove(mySetsPath() + "/" + id); if (admin.editingId === id) admin.editingId = null; }
 function adminAddQ() {
   const cur = collectEditor();
   cur.questions.push({ q: "", a: ["", "", "", ""], correct: 0, time: 15 });
@@ -983,7 +1338,7 @@ function adminImport() {
         questions.push({ q: String(r[0]).trim(), a: [String(r[1]).trim(), String(r[2]).trim(), String(r[3]).trim(), String(r[4]).trim()], correct: ci, time: Math.min(120, Math.max(5, parseInt(r[6], 10) || 15)) });
       });
       if (!questions.length) { msg.innerHTML = "<div class='msg err'>Chưa đọc được câu hỏi nào — bạn xem lại định dạng file theo file mẫu giúp mình nhé.</div>"; return; }
-      await DB.set("sets/" + uid(), { name, questions, createdAt: Date.now() });
+      await DB.set(mySetsPath() + "/" + uid(), { name, questions, createdAt: Date.now() });
       msg.innerHTML = "<div class='msg okm'>✅ Đã nhập bộ “" + esc(name) + "” — " + questions.length + " câu. MC chọn bộ này khi tạo phòng là chơi được ngay.</div>";
     } catch (err) { msg.innerHTML = "<div class='msg err'>Đọc file bị lỗi rồi: " + esc(err.message) + "</div>"; }
   };
@@ -994,10 +1349,9 @@ function adminImport() {
 DB.init();
 const JOIN_MODE = /[?&]join=[A-Za-z0-9]+/.test(location.search);
 if (JOIN_MODE) document.body.classList.add("joinmode");
-seedIfEmpty().then(() => {
-  updateChrome();
-  go(JOIN_MODE ? "player" : "home");
-});
+AUTH.init();
+updateChrome();
+go(JOIN_MODE ? "player" : "home");
 </script>
 <div id="qrModal" class="hidden" onclick="qrZoom(false)">
   <div class="qr-card">
@@ -1019,7 +1373,7 @@ async function cloudCreateRoom() {
   const maxWords = parseInt($("cloudMaxWords").value, 10) || 5;
   let code = roomCode();
   if (await DB.get("rooms/" + code)) code = roomCode();
-  await DB.set("rooms/" + code, { type: "cloud", name: prompt, prompt, maxWords, status: "open", createdAt: Date.now(), answers: {} });
+  await DB.set("rooms/" + code, { type: "cloud", name: prompt, prompt, maxWords, status: "open", createdAt: Date.now(), ownerUid: curUid(), answers: {} });
   host.code = code;
   window.STAGE_MODE = "room";
   go("stage");
@@ -1752,7 +2106,7 @@ async function voteCreateRoom() {
   maxC = Math.max(1, Math.min(opts.length, maxC));
   let code = roomCode();
   if (await DB.get("rooms/" + code)) code = roomCode();
-  await DB.set("rooms/" + code, { type: "vote", name: q, question: q, options: opts, maxChoices: maxC, status: "open", createdAt: Date.now(), ballots: {} });
+  await DB.set("rooms/" + code, { type: "vote", name: q, question: q, options: opts, maxChoices: maxC, status: "open", createdAt: Date.now(), ownerUid: curUid(), ballots: {} });
   host.code = code;
   window.STAGE_MODE = "room";
   go("stage");
