@@ -237,15 +237,15 @@ table.lb td .btn{margin:2px 0}
   <section id="view-home">
     <div class="hero">
       <h1>Đố vui cùng nhau,<br>cười vui <em>hết nấc!</em></h1>
-      <p>Rủ mọi người cùng chơi đố vui trực tiếp nè: MC mở phòng và chiếu câu hỏi lên màn hình lớn, ai cũng chỉ cần điện thoại là trả lời được ngay. Trả lời đúng và nhanh tay sẽ leo thẳng lên bảng vinh danh đó!</p>
+      <p>Rủ mọi người cùng chơi đố vui trực tiếp nè: ADMIN mở phòng và chiếu câu hỏi lên màn hình lớn, ai cũng chỉ cần điện thoại là trả lời được ngay. Trả lời đúng và nhanh tay sẽ leo thẳng lên bảng vinh danh đó!</p>
       <div class="cta">
-        <button class="btn hidden" id="ctaHost" onclick="go('admin')">🎤 Làm MC ngay</button>
+        <button class="btn hidden" id="ctaHost" onclick="go('admin')">🎤 Làm ADMIN ngay</button>
         <button class="btn alt" onclick="go('player')">📱 Vào chơi thôi!</button>
       </div>
       <p class="sub" id="adminHint" style="margin-top:14px">Bạn là quản trị viên? Vào tab <b>Admin</b> đăng nhập để mở phòng và điều khiển trò chơi nhé.</p>
     </div>
     <div class="grid4">
-      <div class="feat"><span class="fic" style="background:#F1E8FF">🖥️</span><h3>Màn hình MC siêu dễ</h3><p>MC điều khiển tất cả trên màn hình lớn: mở câu hỏi, bấm giờ và công bố đáp án.</p></div>
+      <div class="feat"><span class="fic" style="background:#F1E8FF">🖥️</span><h3>Màn hình chính siêu dễ</h3><p>Admin điều khiển tất cả trên màn hình lớn: mở câu hỏi, bấm giờ và công bố đáp án.</p></div>
       <div class="feat"><span class="fic" style="background:#E0F5FF">📱</span><h3>Chơi bằng điện thoại</h3><p>Quét mã QR là vào chơi ngay, chẳng cần cài app, cũng chẳng cần đăng nhập.</p></div>
       <div class="feat"><span class="fic" style="background:#FFF1CC">⚡</span><h3>Phản hồi ngay tức thì</h3><p>Trả lời xong là biết đúng hay sai liền, tay càng nhanh điểm càng cao.</p></div>
       <div class="feat"><span class="fic" style="background:#E6F9E9">🧩</span><h3>Tự tạo bộ câu hỏi</h3><p>Tự soạn câu hỏi ngay trên trang, hoặc nhập cả danh sách từ Excel cho nhanh.</p></div>
@@ -271,7 +271,7 @@ table.lb td .btn{margin:2px 0}
   <section id="view-admin" class="hidden">
     <div id="admin-lock" class="card">
       <h2>🔐 Khu vực Admin</h2>
-      <div class="sub">Khu vực này chỉ dành cho quản trị viên có tài khoản riêng: mở phòng & điều khiển trò chơi (MC), và chăm sóc các bộ câu hỏi của chính mình. Người chơi không vào được khu này đâu nhé.</div>
+      <div class="sub">Khu vực này chỉ dành cho quản trị viên có tài khoản riêng: mở phòng & điều khiển trò chơi, và chăm sóc các bộ câu hỏi của chính mình. Người chơi không vào được khu này đâu nhé.</div>
       <div id="authLoading" class="sub" style="margin-top:12px">⏳ Đang kiểm tra đăng nhập…</div>
       <div id="authForms" class="hidden">
         <div class="hostbar" style="margin:12px 0 2px">
@@ -341,7 +341,7 @@ table.lb td .btn{margin:2px 0}
           <button class="btn alt" onclick="sfxReveal()">▶ Nghe thử: Công bố</button>
           <button class="btn alt" onclick="sfxVictory()">▶ Nghe thử: Vinh danh</button>
         </div>
-        <div class="sub">Nhạc nền tự phát khi mở phòng (ở sảnh chờ) và tự nhỏ xuống 40% khi đang chạy câu hỏi để không át tiếng MC. Trên màn hình chiếu cũng có nút bật/tắt nhạc và thanh chỉnh âm lượng nhanh.</div>
+        <div class="sub">Nhạc nền tự phát khi mở phòng (ở sảnh chờ) và tự nhỏ xuống 40% khi đang chạy câu hỏi để không át tiếng. Trên màn hình chiếu cũng có nút bật/tắt nhạc và thanh chỉnh âm lượng nhanh.</div>
       </div>
       <div id="super-panel" class="card hidden">
         <span class="mode-tag" style="background:var(--purple)">Quản lý chính</span>
@@ -358,7 +358,7 @@ table.lb td .btn{margin:2px 0}
       <div id="host-active" class="card hidden" style="background:var(--soft)"></div>
       <div id="host-create" class="card mode-quiz">
         <span class="mode-tag">Trắc nghiệm</span>
-        <h2>🎤 Mở phòng chơi mới (màn hình MC)</h2>
+        <h2>🎤 Mở phòng chơi mới (màn hình Chính)</h2>
         <div class="sub">Chọn một bộ câu hỏi thật hay, đặt tên phòng rồi bấm mở phòng. Mọi người quét mã QR là vào ngay!</div>
         <label>Bộ câu hỏi</label>
         <select id="hostSetPick" class="setpick"></select>
@@ -878,19 +878,19 @@ function playerLeave() {
 }
 function playerRender() {
   const box = $("player-room"), room = me.room;
-  if (!room) { box.innerHTML = "<div class='card center'><h2>Phòng đã đóng rồi</h2><p class='sub'>MC đã mở ván mới rồi. Bạn quay lại vào phòng mới nhé!</p><button class='btn' onclick='playerLeave()'>← Vào phòng khác</button></div>"; return; }
+  if (!room) { box.innerHTML = "<div class='card center'><h2>Phòng đã đóng rồi</h2><p class='sub'>ADMIN đã mở ván mới rồi. Bạn quay lại vào phòng mới nhé!</p><button class='btn' onclick='playerLeave()'>← Vào phòng khác</button></div>"; return; }
   if (room.status === "revealed" && me._fxRev !== room.qIndex && typeof sfxGood === "function") { me._fxRev = room.qIndex; const pa = ((room.players || {})[me.pid] || {}).answers; const aa = pa && pa[room.qIndex]; if (aa) (aa.correct ? sfxGood : sfxBad)(); }
   const player = (room.players || {})[me.pid] || { name: me.name, answers: {} };
   const mine = scoreOf(player);
   const myHead = `<div class="card" style="padding:14px 18px"><div class="row"><div><b>👤 ${esc(player.name)}</b> <span class="pill">Phòng ${esc(me.code)}</span></div><div class="fix sub">Điểm của bạn: <b style="color:var(--purple2);font-size:17px">${mine.total}</b> · Đúng ${mine.correct} câu</div></div></div>`;
   let body = "";
   if (room.status === "lobby") {
-    body = `<div class="card center"><div class="big-result">🎉 Bạn đã vào phòng rồi!</div><p class="sub">Ngồi thoải mái nhé, MC sắp bắt đầu rồi. Cứ để nguyên màn hình này, câu hỏi sẽ tự bật lên!</p><p><span class="pill">${esc(room.name)}</span> <span class="pill">${(room.questions || []).length} câu</span> <span class="pill">${Object.keys(room.players || {}).length} người chơi</span></p></div>`;
+    body = `<div class="card center"><div class="big-result">🎉 Bạn đã vào phòng rồi!</div><p class="sub">Ngồi thoải mái nhé, ADMIN sắp bắt đầu rồi. Cứ để nguyên màn hình này, câu hỏi sẽ tự bật lên!</p><p><span class="pill">${esc(room.name)}</span> <span class="pill">${(room.questions || []).length} câu</span> <span class="pill">${Object.keys(room.players || {}).length} người chơi</span></p></div>`;
   } else if (room.status === "playing") {
     const q = room.questions[room.qIndex], total = q.time || 15;
     const myAns = player.answers && player.answers[room.qIndex];
     if (myAns) {
-      body = `<div class="card center"><div class="sub">CÂU ${room.qIndex + 1} / ${room.questions.length}</div><div class="timer" id="pTimer"></div><div class="big-result">🔒 Đã gửi câu trả lời!</div><p class="sub">Bạn chọn <b>${LETTERS[myAns.choice]}. ${esc(q.a[myAns.choice])}</b> — ngồi chờ MC công bố đáp án nhé, hồi hộp chưa? 😆</p></div>`;
+      body = `<div class="card center"><div class="sub">CÂU ${room.qIndex + 1} / ${room.questions.length}</div><div class="timer" id="pTimer"></div><div class="big-result">🔒 Đã gửi câu trả lời!</div><p class="sub">Bạn chọn <b>${LETTERS[myAns.choice]}. ${esc(q.a[myAns.choice])}</b> — ngồi chờ ADMIN công bố đáp án nhé, hồi hộp chưa? 😆</p></div>`;
     } else {
       body = `<div class="card"><div class="sub center">CÂU ${room.qIndex + 1} / ${room.questions.length} — trả lời càng nhanh, điểm càng cao đó!</div><div class="timer" id="pTimer">${total}</div>
         <div class="qtext">${esc(q.q)}</div>
@@ -1339,7 +1339,7 @@ function adminImport() {
       });
       if (!questions.length) { msg.innerHTML = "<div class='msg err'>Chưa đọc được câu hỏi nào — bạn xem lại định dạng file theo file mẫu giúp mình nhé.</div>"; return; }
       await DB.set(mySetsPath() + "/" + uid(), { name, questions, createdAt: Date.now() });
-      msg.innerHTML = "<div class='msg okm'>✅ Đã nhập bộ “" + esc(name) + "” — " + questions.length + " câu. MC chọn bộ này khi tạo phòng là chơi được ngay.</div>";
+      msg.innerHTML = "<div class='msg okm'>✅ Đã nhập bộ “" + esc(name) + "” — " + questions.length + " câu. ADMIN chọn bộ này khi tạo phòng là chơi được ngay.</div>";
     } catch (err) { msg.innerHTML = "<div class='msg err'>Đọc file bị lỗi rồi: " + esc(err.message) + "</div>"; }
   };
   rd.readAsArrayBuffer(f);
