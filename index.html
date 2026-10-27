@@ -190,9 +190,28 @@ body.stage-mode .wrap{max-width:1240px}
 .slide-area{position:relative;flex:1;min-height:0;overflow:hidden}
 .slide-word{position:absolute;font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;line-height:1.12;text-align:center;animation:rise .4s ease both;text-shadow:0 2px 0 rgba(255,255,255,.75)}
 .slide-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}
-.slide-qr{position:absolute;right:6px;bottom:6px;width:118px;background:#fff;border:2px dashed #D9CFFF;border-radius:14px;padding:7px;text-align:center;z-index:6;box-shadow:0 8px 20px rgba(70,23,143,.16);cursor:zoom-in}
+.slide-qr{position:absolute;width:118px;background:#fff;border:2px dashed #D9CFFF;border-radius:14px;padding:7px;text-align:center;z-index:6;box-shadow:0 8px 20px rgba(70,23,143,.16);cursor:zoom-in}
+.slide-qr.c0{right:6px;bottom:6px}
+.slide-qr.c1{left:6px;bottom:6px}
+.slide-qr.c2{left:6px;top:6px}
+.slide-qr.c3{right:6px;top:6px}
 .slide-qr img{width:100%;height:auto;display:block;border-radius:6px}
 .slide-qr .sub{font-size:11px;line-height:1.3;margin-top:3px;font-weight:700}
+/* 2 nút mini bám ở mép khối QR (đổi góc / ẩn QR): thật nhỏ + mờ, rê chuột/chạm vào vùng QR mới rõ lên */
+.slide-qr-tools{position:absolute;display:flex;gap:4px;z-index:7;opacity:.35;transition:opacity .2s}
+.slide-qr.c0 .slide-qr-tools{top:-11px;right:2px}
+.slide-qr.c1 .slide-qr-tools{top:-11px;left:2px}
+.slide-qr.c2 .slide-qr-tools{bottom:-11px;left:2px}
+.slide-qr.c3 .slide-qr-tools{bottom:-11px;right:2px}
+.slide-qr:hover .slide-qr-tools,.slide-qr:focus-within .slide-qr-tools,.slide-qr:active .slide-qr-tools{opacity:1}
+.slide-qr-mini{width:24px;height:24px;border-radius:50%;border:1.5px solid #D9CFFF;background:rgba(255,255,255,.94);font-size:12px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 8px rgba(70,23,143,.20)}
+/* Nút hiện lại QR khi đang ẩn: còn nhỏ và mờ hơn nữa, nằm đúng góc QR vừa ẩn */
+.slide-qr-eye{position:absolute;width:21px;height:21px;border-radius:50%;border:1.5px solid #D9CFFF;background:rgba(255,255,255,.94);font-size:11px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:6;opacity:.25;transition:opacity .2s;box-shadow:0 3px 8px rgba(70,23,143,.18)}
+.slide-qr-eye:hover,.slide-qr-eye:active{opacity:1}
+.slide-qr-eye.c0{right:6px;bottom:6px}
+.slide-qr-eye.c1{left:6px;bottom:6px}
+.slide-qr-eye.c2{left:6px;top:6px}
+.slide-qr-eye.c3{right:6px;top:6px}
 .slide-exit{position:absolute;top:4px;right:6px;z-index:8;width:36px;height:36px;border-radius:50%;border:none;background:#E21B3C;color:#fff;font-size:18px;font-weight:900;line-height:1;cursor:pointer;opacity:.35;transition:opacity .2s;box-shadow:0 6px 16px rgba(226,27,60,.35)}
 .slide-exit:hover,.slide-exit:active{opacity:1}
 body.joinmode nav.tabs{display:none!important}
@@ -1575,15 +1594,29 @@ function cloudHostRender(room) {
    cỡ chữ, cộng khoảng đệm; từ xoay dọc 90° thì hoán đổi rộng/cao) và kiểm tra
    va chạm từng cặp nên chữ KHÔNG đè lên nhau; quá đông thì cỡ chữ tự giảm dần.
    Chữ cũ giữ nguyên vị trí khi có chữ mới; toàn bố cục tự xáo lại mỗi 20 giây.
-   Màn Slideshow KHÔNG có nút điều khiển: chỉ còn câu hỏi lớn, vùng chữ rộng
-   hết màn hình, QR cố định ở góc phải-dưới và dấu ✕ đỏ nhỏ ở góc phải-trên. */
+   Màn Slideshow KHÔNG có thanh điều khiển: chỉ còn câu hỏi lớn, vùng chữ
+   rộng hết màn hình, QR ở 1 góc và dấu ✕ đỏ nhỏ ở góc phải-trên. Riêng khối
+   QR có 2 nút mini bám ở mép (📍 đổi góc, 🙈 ẩn QR) để thật nhỏ và mờ —
+   rê chuột/chạm vào vùng QR mới rõ; QR ẩn thì chỉ còn nút 👁 mờ hơn nữa ở
+   đúng góc đó để hiện lại. Vùng né chữ bám theo góc QR hiện tại. */
 host.cloudSlide = false;
 const SLIDE_INTERVAL_MS = 20000;
-const SLIDE_QR_W = 160, SLIDE_QR_H = 178; /* vùng chừa riêng cho QR ở góc phải-dưới vùng mây */
+const SLIDE_QR_W = 160, SLIDE_QR_H = 178; /* vùng chừa riêng cho QR (ở góc QR hiện tại) trong vùng mây */
 const slide = {
   timer: null, roomCode: null,
-  boxes: new Map(), areaW: 0, areaH: 0
+  boxes: new Map(), areaW: 0, areaH: 0,
+  qrCorner: 0, /* 0 = phải-dưới · 1 = trái-dưới · 2 = trái-trên · 3 = phải-trên */
+  qrHidden: false
 };
+function slideQrReset() { slide.qrCorner = 0; slide.qrHidden = false; }
+/* Vùng cấm đặt từ của QR theo góc hiện tại; QR đang ẩn thì không cần né. */
+function slideQrObstacle(area) {
+  if (slide.qrHidden) return null;
+  if (slide.qrCorner === 1) return { x: 0, y: area.h - SLIDE_QR_H, w: SLIDE_QR_W, h: SLIDE_QR_H };
+  if (slide.qrCorner === 2) return { x: 0, y: 0, w: SLIDE_QR_W, h: SLIDE_QR_H };
+  if (slide.qrCorner === 3) return { x: area.w - SLIDE_QR_W, y: 0, w: SLIDE_QR_W, h: SLIDE_QR_H };
+  return { x: area.w - SLIDE_QR_W, y: area.h - SLIDE_QR_H, w: SLIDE_QR_W, h: SLIDE_QR_H };
+}
 function slideHash(s) { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
 function slideAreaSize() {
   const el = document.getElementById("slideArea");
@@ -1633,7 +1666,8 @@ function slidePlaceOne(key, text, placed, area) {
   const hash = slideHash(key + "|" + text);
   const rot = hash % 10 < 3 ? 90 : 0;
   const col = CLOUD_COLORS[hash % CLOUD_COLORS.length];
-  const obstacles = placed.concat([{ x: area.w - SLIDE_QR_W, y: area.h - SLIDE_QR_H, w: SLIDE_QR_W, h: SLIDE_QR_H }]);
+  const qrOb = slideQrObstacle(area);
+  const obstacles = qrOb ? placed.concat([qrOb]) : placed.slice();
   let size = slideDesiredSize(text) - (hash % 9);
   if (size < 20) size = 20;
   let best = null, bestOverlap = Infinity;
@@ -1715,14 +1749,14 @@ function slideFullscreen(on) {
 function slideOpen() {
   host.cloudSlide = true;
   slideFullscreen(true);
-  slide.boxes.clear(); slide.areaW = 0; slide.areaH = 0;
+  slide.boxes.clear(); slide.areaW = 0; slide.areaH = 0; slideQrReset();
   slideStartTimer();
   hostRender();
 }
 function slideOpenGo() {
   host.cloudSlide = true;
   slideFullscreen(true);
-  slide.boxes.clear(); slide.areaW = 0; slide.areaH = 0;
+  slide.boxes.clear(); slide.areaW = 0; slide.areaH = 0; slideQrReset();
   slideStartTimer();
   go("stage");
   if (host.room) hostRender();
@@ -1733,9 +1767,27 @@ function slideExit() {
   slideFullscreen(false);
   hostRender();
 }
+/* Nút mini bám ở khối QR: đổi góc / ẩn / hiện lại QR.
+   stopPropagation để cú bấm KHÔNG lọt xuống khối QR (phóng to) và không xáo bố cục;
+   chữ đã đặt giữ nguyên — vùng né mới chỉ áp cho các lần đặt từ sau đó. */
+function slideQrCycle(ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  slide.qrCorner = (slide.qrCorner + 1) % 4;
+  hostRender();
+}
+function slideQrHide(ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  slide.qrHidden = true;
+  hostRender();
+}
+function slideQrShow(ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  slide.qrHidden = false;
+  hostRender();
+}
 function cloudSlideRender(room) {
   const box = $("host-room"), code = host.code;
-  if (slide.roomCode !== code) { slide.roomCode = code; slide.boxes.clear(); slide.areaW = 0; slide.areaH = 0; }
+  if (slide.roomCode !== code) { slide.roomCode = code; slide.boxes.clear(); slide.areaW = 0; slide.areaH = 0; slideQrReset(); }
   const area = slideAreaSize();
   slideEnsure(area);
   const entries = Object.entries(room.answers || {}).sort((p, q) => (p[1].at || 0) - (q[1].at || 0));
@@ -1746,12 +1798,15 @@ function cloudSlideRender(room) {
         return `<span class="slide-word" style="left:${cx}px;top:${cy}px;width:${Math.round(b.cw)}px;transform:translate(-50%,-50%) rotate(${b.rot}deg);font-size:${b.size}px;color:${b.col}">${esc(a.text)}</span>`;
       }).join("")
     : `<div class="slide-empty"><p class="sub" style="font-size:19px">Chưa có câu trả lời nào — mọi người quét mã QR ở góc màn hình và gửi từ lên nhé ☁️</p></div>`;
+  const qrHtml = slide.qrHidden
+    ? `<button class="slide-qr-eye c${slide.qrCorner}" onclick="slideQrShow(event)" title="Hiện mã QR" aria-label="Hiện mã QR">👁</button>`
+    : `<div class="slide-qr c${slide.qrCorner}" title="Bấm để phóng to" onclick="qrZoom(true)"><img alt="QR tham gia" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinLink(code))}"><div class="sub">Quét để trả lời · ${esc(code)}</div><div class="slide-qr-tools"><button class="slide-qr-mini" onclick="slideQrCycle(event)" title="Đổi góc QR" aria-label="Đổi góc QR">📍</button><button class="slide-qr-mini" onclick="slideQrHide(event)" title="Ẩn QR" aria-label="Ẩn QR">🙈</button></div></div>`;
   box.innerHTML = `
   <div class="slide-screen">
     <button class="slide-exit" onclick="slideExit()" title="Thoát Slideshow" aria-label="Thoát Slideshow">✕</button>
     <div class="slide-q">${esc(room.prompt)}</div>
     <div class="slide-area" id="slideArea">${wordsHtml}
-      <div class="slide-qr" title="Bấm để phóng to" onclick="qrZoom(true)"><img alt="QR tham gia" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinLink(code))}"><div class="sub">Quét để trả lời · ${esc(code)}</div></div>
+      ${qrHtml}
     </div>
   </div>`;
 }
