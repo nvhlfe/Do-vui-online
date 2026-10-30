@@ -214,6 +214,37 @@ body.stage-mode .wrap{max-width:1240px}
 .slide-qr-eye.c3{right:6px;top:6px}
 .slide-exit{position:absolute;top:4px;right:6px;z-index:8;width:36px;height:36px;border-radius:50%;border:none;background:#E21B3C;color:#fff;font-size:18px;font-weight:900;line-height:1;cursor:pointer;opacity:.35;transition:opacity .2s;box-shadow:0 6px 16px rgba(226,27,60,.35)}
 .slide-exit:hover,.slide-exit:active{opacity:1}
+/* ==== Trình chiếu sạch (Slideshow) cho Trắc nghiệm / Bình chọn / Lucky Draw ====
+   Vỏ màn hình chung .show-screen: cố định toàn viewport, nền pastel giống
+   Slideshow mây, không thanh stage-bar, thẻ trong suốt không viền/bóng và
+   rộng tối đa để nội dung phóng hết màn hình. Thanh .hostbar bên trong biến
+   thành thanh điều khiển NỔI ở đáy giữa màn hình: nhỏ, mờ ~0.3, rê chuột/
+   chạm/focus mới rõ. Nút hành động chính (.stage-start) đứng riêng nên vẫn
+   rõ để bấm bắt đầu ván. Thoát bằng dấu ✕ đỏ nhỏ (.slide-exit) góc phải-trên. */
+.show-screen{position:fixed;inset:0;z-index:58;display:flex;flex-direction:column;padding:16px 20px 14px;overflow-y:auto;background:
+  radial-gradient(700px 420px at 8% -4%, rgba(255,93,143,.20) 0%, transparent 60%),
+  radial-gradient(760px 460px at 94% 2%, rgba(0,184,230,.18) 0%, transparent 60%),
+  radial-gradient(900px 620px at 50% 112%, rgba(255,166,2,.16) 0%, transparent 60%),
+  var(--bg)}
+.show-screen .card{background:transparent;border:none;box-shadow:none;border-radius:0;padding:10px 6px;margin:0 auto;width:100%;max-width:1240px;animation:none}
+.show-screen .hostbar{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:9;width:max-content;max-width:96vw;margin:0;padding:10px 12px;background:rgba(255,255,255,.9);border:1.5px solid var(--line);border-radius:18px;box-shadow:0 14px 34px rgba(70,23,143,.18);opacity:.3;transition:opacity .2s}
+.show-screen .hostbar:hover,.show-screen .hostbar:focus-within,.show-screen .hostbar:active{opacity:1}
+.show-screen .hostbar .btn{flex:0 1 auto;min-width:0}
+/* Phóng nội dung trong trình chiếu */
+.show-screen .qr-hero{width:min(360px,62vw)}
+.show-screen .ans{font-size:clamp(18px,2.4vw,25px);min-height:92px}
+.show-screen .show-vote{width:100%;max-width:1080px;margin:8px auto 0;text-align:left}
+.show-screen .vrow{margin:17px 0}
+.show-screen .vrow .vlabel{font-size:clamp(19px,3vw,27px)}
+.show-screen .vrow .bar{flex:1;height:28px;background:rgba(255,255,255,.7);border-radius:99px;overflow:hidden;box-shadow:inset 0 2px 6px rgba(70,23,143,.12)}
+.show-screen .vrow .bar i{display:block;height:100%;border-radius:99px;transition:width .6s ease}
+.show-screen .vrow .vnum{flex:0 0 172px;font-size:clamp(17px,2.6vw,24px)}
+.show-screen .race-swarm{height:min(58vh,660px)}
+.show-screen .lane{height:74px}
+.show-screen .lane .racer{top:32px;font-size:37px}
+.show-screen .lane-name{font-size:16px}
+.show-screen .wheel-wrap{width:min(88vw,68vh,620px)}
+.show-screen .slot-reel{width:100px;height:128px;font-size:70px}
 body.joinmode nav.tabs{display:none!important}
 .qrbox img{cursor:zoom-in}
 #qrModal{position:fixed;inset:0;background:rgba(34,8,74,.9);z-index:60;display:flex;align-items:center;justify-content:center;padding:18px}
@@ -711,7 +742,14 @@ function qrZoom(open) {
     m.classList.remove("hidden");
   } else m.classList.add("hidden");
 }
-document.addEventListener("keydown", e => { if (e.key === "Escape") qrZoom(false); });
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  const m = $("qrModal");
+  if (m && !m.classList.contains("hidden")) { qrZoom(false); return; } /* modal QR vẫn ưu tiên đóng trước */
+  if (host.show) { showExit(); return; }
+  if (typeof luckyShowKind !== "undefined" && luckyShowKind) { luckyShowExit(); return; }
+  qrZoom(false);
+});
 let timerInt = null;
 function stopTimer() { if (timerInt) { clearInterval(timerInt); timerInt = null; } }
 function startTimer(getRemain, onTick) {
@@ -741,7 +779,7 @@ async function hostInit() {
   const cc = $("cloud-create"), ha = $("host-active"), vc = $("vote-create");
   if (host.code) {
     $("host-create").classList.add("hidden"); if (cc) cc.classList.add("hidden"); if (vc) vc.classList.add("hidden");
-    if (ha) { ha.classList.remove("hidden"); ha.innerHTML = `<div class="row"><div>📺 <b>Đang có phòng ${esc(host.code)}</b> ở màn hình chiếu${host.room ? " — " + esc(host.room.name || host.room.prompt || "") : ""}. Khu Admin chỉ để quản lý câu hỏi, điều khiển game ở màn hình chiếu nhé.</div><div class="fix">${host.room && host.room.type === "cloud" ? '<button class="btn small" onclick="slideOpenGo()">▶️ Slideshow</button> ' : ""}<button class="btn small" onclick="go('stage')">Quay lại màn hình chiếu</button> <button class="btn small danger" onclick="hostReset(false)">Đóng phòng</button></div></div>`; }
+    if (ha) { ha.classList.remove("hidden"); ha.innerHTML = `<div class="row"><div>📺 <b>Đang có phòng ${esc(host.code)}</b> ở màn hình chiếu${host.room ? " — " + esc(host.room.name || host.room.prompt || "") : ""}. Khu Admin chỉ để quản lý câu hỏi, điều khiển game ở màn hình chiếu nhé.</div><div class="fix">${host.room ? (host.room.type === "cloud" ? '<button class="btn small" onclick="slideOpenGo()">▶️ Slideshow</button> ' : '<button class="btn small" onclick="showOpenGo()">▶️ Slideshow</button> ') : ""}<button class="btn small" onclick="go('stage')">Quay lại màn hình chiếu</button> <button class="btn small danger" onclick="hostReset(false)">Đóng phòng</button></div></div>`; }
   } else {
     $("host-create").classList.remove("hidden"); if (cc) cc.classList.remove("hidden"); if (vc) vc.classList.remove("hidden");
     if (ha) { ha.classList.add("hidden"); ha.innerHTML = ""; }
@@ -763,6 +801,7 @@ async function hostCreateRoom() {
   };
   await DB.set("rooms/" + code, room);
   host.code = code;
+  host.show = false;
   window.STAGE_MODE = "room";
   go("stage");
 }
@@ -775,9 +814,37 @@ function joinLink(code) { return location.origin + location.pathname + "?join=" 
 function stageBar() {
   return `<div class="stage-bar"><span class="pill">📺 MÀN HÌNH CHIẾU</span><span class="sub">Phòng <b>${esc(host.code || "")}</b></span><span class="sp"></span><button class="btn small alt" id="stageBgmBtn" onclick="toggleBgm()">🎵 Nhạc nền</button><button class="btn small alt" id="stageSfxBtn" onclick="toggleSfx()">🔔 Hiệu ứng</button><input type="range" id="stageBgmVol" min="0" max="100" value="60" title="Âm lượng nhạc nền" style="width:90px" oninput="setBgmVol(this.value)"><button class="btn small alt" onclick="go('admin')">← Về khu Admin</button><button class="btn small danger" onclick="hostReset(false)">Đóng phòng</button></div>`;
 }
+/* ---------- Trình chiếu sạch (Slideshow) cho Trắc nghiệm & Bình chọn ----------
+   Cờ riêng host.show (không đụng Slideshow mây dùng host.cloudSlide): khi bật,
+   toàn bộ nội dung màn hình chiếu được bọc trong vỏ .show-screen — bỏ stageBar,
+   thẻ trong suốt, nội dung phóng tối đa, thanh nút thao tác thành thanh nổi mờ
+   ở đáy; thoát bằng dấu ✕ đỏ nhỏ (class .slide-exit dùng chung với mây). Mở
+   trình chiếu thì thử bật toàn màn hình (slideFullscreen — bị từ chối thì thôi). */
+host.show = false;
+function showShellOpen(exitFn) {
+  return `<div class="show-screen"><button class="slide-exit" onclick="${exitFn}()" title="Thoát trình chiếu" aria-label="Thoát trình chiếu">✕</button>`;
+}
+function showOpen() {
+  host.show = true;
+  slideQrReset();
+  slideFullscreen(true);
+  hostRender();
+}
+function showOpenGo() {
+  host.show = true;
+  slideQrReset();
+  slideFullscreen(true);
+  go("stage");
+  if (host.room) hostRender();
+}
+function showExit() {
+  host.show = false;
+  slideFullscreen(false);
+  hostRender();
+}
 function hostRender() {
   const box = $("host-room"), room = host.room, code = host.code;
-  if (!room) { box.innerHTML = stageBar() + "<div class='card center'><h2>Phòng đã đóng rồi</h2><p class='sub'>Bấm nút bên dưới để về khu Admin mở phòng mới nhé.</p><button class='btn' onclick='hostReset(true)'>← Về khu Admin</button></div>"; return; }
+  if (!room) { if (host.show) { host.show = false; slideFullscreen(false); } box.innerHTML = stageBar() + "<div class='card center'><h2>Phòng đã đóng rồi</h2><p class='sub'>Bấm nút bên dưới để về khu Admin mở phòng mới nhé.</p><button class='btn' onclick='hostReset(true)'>← Về khu Admin</button></div>"; return; }
   if (room.type === "cloud") { cloudHostRender(room); return; }
   if (room.type === "vote") { voteHostRender(room); return; }
   if (room.status !== "finished") podClear();
@@ -794,6 +861,7 @@ function hostRender() {
       <div class="sub">👆 Bấm vào mã QR để phóng to · Đã có <b>${pCount} bạn</b> vào phòng</div>
       <div class="stage-players">${Object.values(players).map(px => `<span class="player-chip">👤 ${esc(px.name)}</span>`).join("") || "<span class='sub'>Đang chờ những bạn đầu tiên… 🥰</span>"}</div>
       <button class="btn stage-start" onclick="hostStartQ(0)">▶ BẮT ĐẦU CÂU 1 THÔI!</button>
+      ${host.show ? "" : `<div><button class="btn alt" style="margin-top:12px" onclick="showOpen()">▶️ Slideshow</button></div>`}
     </div>`;
   } else if (room.status === "playing" || room.status === "revealed") {
     const q = room.questions[room.qIndex];
@@ -805,7 +873,7 @@ function hostRender() {
         <div class="sub center">CÂU ${room.qIndex + 1} / ${room.questions.length} · Đã trả lời: <b>${answered}/${pCount}</b></div>${qBadgesHtml(q)}
         <div class="timer" id="hostTimer">${total}</div>
         <div class="qtext stage-q">${esc(q.q)}</div>${answersHtml}
-        <div class="hostbar"><button class="btn" onclick="hostReveal()">🔓 Khóa lại & công bố đáp án</button></div>
+        <div class="hostbar"><button class="btn" onclick="hostReveal()">🔓 Khóa lại & công bố đáp án</button>${host.show ? "" : `<button class="btn alt" onclick="showOpen()">▶️ Slideshow</button>`}</div>
       </div>`;
     } else {
       body = `<div class="card">
@@ -814,7 +882,7 @@ function hostRender() {
       </div>
       <div class="card">
         <h3 class="center" style="margin-top:2px">🏆 Bảng xếp hạng sau câu ${room.qIndex + 1}</h3>${podiumHtml(top)}${lbHtml(top)}
-        <div class="hostbar">${room.qIndex + 1 < room.questions.length ? `<button class="btn" onclick="hostStartQ(${room.qIndex + 1})">Câu tiếp theo → (${room.qIndex + 2})</button>` : `<button class="btn" onclick="hostFinish()">🏁 Kết thúc & vinh danh TOP 10</button>`}</div>
+        <div class="hostbar">${room.qIndex + 1 < room.questions.length ? `<button class="btn" onclick="hostStartQ(${room.qIndex + 1})">Câu tiếp theo → (${room.qIndex + 2})</button>` : `<button class="btn" onclick="hostFinish()">🏁 Kết thúc & vinh danh TOP 10</button>`}${host.show ? "" : `<button class="btn alt" onclick="showOpen()">▶️ Slideshow</button>`}</div>
       </div>`;
     }
     setTimeout(() => {
@@ -829,7 +897,7 @@ function hostRender() {
   } else if (room.status === "finished") {
     body = podSequenceHtml(top);
   }
-  box.innerHTML = stageBar() + body;
+  box.innerHTML = (host.show ? showShellOpen("showExit") : stageBar()) + body + (host.show ? "</div>" : "");
 }
 function hostStatsHtml(room, q) {
   const players = Object.values(room.players || {});
@@ -1312,7 +1380,7 @@ function roomsRender() {
     return `<div class="row" style="border-bottom:1.5px solid var(--line);padding:9px 0">
       <div><b>${esc(code)}</b> · ${typeLabel(r)} · ${esc(r.name || r.prompt || r.question || "")}<br><span class="sub">Chủ phòng: ${esc(owner)}${mine ? " · 📺 đang ở màn hình chiếu của máy này" : ""}</span></div>
       <div class="fix"><button class="btn small" onclick="roomTakeControl('${code}')">📺 Màn hình chiếu</button>
-      ${r.type === "cloud" ? `<button class="btn small alt" onclick="roomSlide('${code}')">▶️ Slideshow</button>` : ""}
+      ${r.type === "cloud" ? `<button class="btn small alt" onclick="roomSlide('${code}')">▶️ Slideshow</button>` : `<button class="btn small alt" onclick="roomShow('${code}')">▶️ Slideshow</button>`}
       <button class="btn small danger" onclick="roomClose('${code}')">Đóng phòng</button></div>
     </div>`;
   }).join("");
@@ -1320,14 +1388,22 @@ function roomsRender() {
 function roomTakeControl(code) {
   const r = adminRooms[code]; if (!r) return;
   host.code = code; host.room = r;
+  host.show = false;
   window.STAGE_MODE = "room";
   go("stage");
 }
 function roomSlide(code) {
   const r = adminRooms[code]; if (!r) return;
   host.code = code; host.room = r;
+  host.show = false;
   window.STAGE_MODE = "room";
   slideOpenGo();
+}
+function roomShow(code) {
+  const r = adminRooms[code]; if (!r) return;
+  host.code = code; host.room = r;
+  window.STAGE_MODE = "room";
+  showOpenGo();
 }
 async function roomClose(code) {
   if (!confirm("Đóng phòng " + code + "? Người chơi trong phòng sẽ bị thoát ra.")) return;
@@ -1529,6 +1605,7 @@ async function cloudCreateRoom() {
   if (await DB.get("rooms/" + code)) code = roomCode();
   await DB.set("rooms/" + code, { type: "cloud", name: prompt, prompt, maxWords, status: "open", createdAt: Date.now(), ownerUid: curUid(), answers: {} });
   host.code = code;
+  host.show = false;
   host.cloudSlide = false; slideStopTimer();
   window.STAGE_MODE = "room";
   go("stage");
@@ -1746,6 +1823,14 @@ function slideFullscreen(on) {
     else if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
   } catch (e) { /* trình duyệt từ chối fullscreen thì vẫn hiện đầy viewport như thường */ }
 }
+/* Trình duyệt tự thoát toàn màn hình (người dùng bấm Esc của trình duyệt, F11…)
+   thì thoát luôn trình chiếu Trắc nghiệm/Bình chọn/Lucky Draw cho khớp.
+   Slideshow mây giữ nguyên hành vi cũ, không bị ảnh hưởng. */
+document.addEventListener("fullscreenchange", () => {
+  if (document.fullscreenElement) return;
+  if (host.show) showExit();
+  else if (typeof luckyShowKind !== "undefined" && luckyShowKind) luckyShowExit();
+});
 function slideOpen() {
   host.cloudSlide = true;
   slideFullscreen(true);
@@ -1785,6 +1870,13 @@ function slideQrShow(ev) {
   slide.qrHidden = false;
   hostRender();
 }
+/* Khối QR mini ở góc màn trình chiếu (kèm 2 nút mini 📍/🙈, hoặc nút 👁 khi đang
+   ẩn) — dùng chung cho Slideshow mây và trình chiếu Bình chọn. */
+function slideQrHtml(code) {
+  return slide.qrHidden
+    ? `<button class="slide-qr-eye c${slide.qrCorner}" onclick="slideQrShow(event)" title="Hiện mã QR" aria-label="Hiện mã QR">👁</button>`
+    : `<div class="slide-qr c${slide.qrCorner}" title="Bấm để phóng to" onclick="qrZoom(true)"><img alt="QR tham gia" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinLink(code))}"><div class="sub">Quét để trả lời · ${esc(code)}</div><div class="slide-qr-tools"><button class="slide-qr-mini" onclick="slideQrCycle(event)" title="Đổi góc QR" aria-label="Đổi góc QR">📍</button><button class="slide-qr-mini" onclick="slideQrHide(event)" title="Ẩn QR" aria-label="Ẩn QR">🙈</button></div></div>`;
+}
 function cloudSlideRender(room) {
   const box = $("host-room"), code = host.code;
   if (slide.roomCode !== code) { slide.roomCode = code; slide.boxes.clear(); slide.areaW = 0; slide.areaH = 0; slideQrReset(); }
@@ -1798,9 +1890,7 @@ function cloudSlideRender(room) {
         return `<span class="slide-word" style="left:${cx}px;top:${cy}px;width:${Math.round(b.cw)}px;transform:translate(-50%,-50%) rotate(${b.rot}deg);font-size:${b.size}px;color:${b.col}">${esc(a.text)}</span>`;
       }).join("")
     : `<div class="slide-empty"><p class="sub" style="font-size:19px">Chưa có câu trả lời nào — mọi người quét mã QR ở góc màn hình và gửi từ lên nhé ☁️</p></div>`;
-  const qrHtml = slide.qrHidden
-    ? `<button class="slide-qr-eye c${slide.qrCorner}" onclick="slideQrShow(event)" title="Hiện mã QR" aria-label="Hiện mã QR">👁</button>`
-    : `<div class="slide-qr c${slide.qrCorner}" title="Bấm để phóng to" onclick="qrZoom(true)"><img alt="QR tham gia" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinLink(code))}"><div class="sub">Quét để trả lời · ${esc(code)}</div><div class="slide-qr-tools"><button class="slide-qr-mini" onclick="slideQrCycle(event)" title="Đổi góc QR" aria-label="Đổi góc QR">📍</button><button class="slide-qr-mini" onclick="slideQrHide(event)" title="Ẩn QR" aria-label="Ẩn QR">🙈</button></div></div>`;
+  const qrHtml = slideQrHtml(code);
   box.innerHTML = `
   <div class="slide-screen">
     <button class="slide-exit" onclick="slideExit()" title="Thoát Slideshow" aria-label="Thoát Slideshow">✕</button>
@@ -2010,6 +2100,27 @@ let race = { active: false, names: [], allNames: [], winners: [], prize: "", the
 window.RACE = race;
 window.RACE_Render = () => raceRender();
 window.RACE_StopTimer = () => raceStopTimer();
+/* ---------- Trình chiếu sạch (Slideshow) cho Lucky Draw ----------
+   Biến riêng luckyShowKind: null = màn Lucky Draw thường; "race" | "wheel" |
+   "slot" = đang trình chiếu hình thức đó trong vỏ .show-screen (dùng chung
+   với Trắc nghiệm/Bình chọn). Thoát trình chiếu bằng dấu ✕ đỏ nhỏ sẽ về màn
+   Lucky Draw THƯỜNG của hình thức đó, không về Admin. */
+let luckyShowKind = null;
+function luckyShowOpen(kind) {
+  luckyShowKind = kind;
+  slideFullscreen(true);
+  if (kind === "race") raceRender();
+  else if (kind === "wheel") wheelRender();
+  else if (kind === "slot") slotRender();
+}
+function luckyShowExit() {
+  const kind = luckyShowKind;
+  luckyShowKind = null;
+  slideFullscreen(false);
+  if (kind === "race") raceRender();
+  else if (kind === "wheel") wheelRender();
+  else if (kind === "slot") slotRender();
+}
 function raceParseNames() {
   const raw = ($("raceNames") ? $("raceNames").value : "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
   const seen = new Set(), list = [];
@@ -2045,6 +2156,7 @@ function raceSetup() {
   race.theme = $("raceTheme").value || "car";
   race.dur = parseInt($("raceDur").value, 10) || 30;
   race.active = true; race.finished = false; race.winner = null; race.order = [];
+  luckyShowKind = null;
   raceBuildRacers();
   window.STAGE_MODE = "race";
   go("stage");
@@ -2055,15 +2167,16 @@ function raceBuildRacers() {
   race.comment = "Các tay đua đã vào vị trí! Bà con sẵn sàng cổ vũ chưa nào? 📣";
 }
 function raceBar() {
-  return `<div class="stage-bar"><span class="pill">🎁 LUCKY DRAW</span><span class="sub">${esc(race.prize)}</span><span class="sp"></span><button class="btn small alt" onclick="raceClose()">✕ Đóng & về Admin</button></div>`;
+  return `<div class="stage-bar"><span class="pill">🎁 LUCKY DRAW</span><span class="sub">${esc(race.prize)}</span><span class="sp"></span><button class="btn small alt" onclick="luckyShowOpen('race')">▶️ Slideshow</button><button class="btn small alt" onclick="raceClose()">✕ Đóng & về Admin</button></div>`;
 }
-function raceClose() { raceStopTimer(); race.active = false; race.running = false; window.STAGE_MODE = null; go("admin"); }
+function raceClose() { luckyShowKind = null; raceStopTimer(); race.active = false; race.running = false; window.STAGE_MODE = null; go("admin"); }
 function raceStopTimer() { if (race.timer) { clearInterval(race.timer); race.timer = null; } race.running = false; }
 function raceRender() {
   const box = $("host-room"); if (!box) return;
   const th = RACE_THEMES[race.theme] || RACE_THEMES.car;
   if (race.finished) { raceRenderResult(box, th); return; }
-  box.innerHTML = raceBar() + `
+  const inShow = luckyShowKind === "race";
+  box.innerHTML = (inShow ? showShellOpen("luckyShowExit") : raceBar()) + `
     <div class="card stage-center">
       <span class="pill">${th.label} · ${race.racers.length} người tham gia</span>
       <div class="stage-title" style="font-size:clamp(30px,5.4vw,50px)">🎁 ${esc(race.prize)}</div>
@@ -2073,7 +2186,7 @@ function raceRender() {
       <div id="raceCountNum" class="race-count hidden"></div>
       <button class="btn stage-start" id="raceStartBtn" onclick="raceCountdown()">🏁 BẮT ĐẦU ĐUA!</button>
       ${race.winners.length ? `<div style="margin-top:16px"><div class="sub">🏆 Đã tìm được ${race.winners.length} người thắng:</div>${race.winners.map((w2, i) => `<span class="my-chip">Giải ${i + 1}: <b>${esc(w2.prize)}</b> — ${esc(w2.name)}</span>`).join("")}</div>` : ""}
-    </div>`;
+    </div>` + (inShow ? "</div>" : "");
   const track = $("raceTrack");
   if (race.mode === "swarm") {
     track.className = "race-swarm";
@@ -2182,7 +2295,8 @@ function raceFinish() {
 function raceRenderResult(box, th) {
   const top = race.order.slice(0, 3).map(i => race.racers[i]);
   const restNames = race.allNames.filter(n => !race.winners.some(w2 => w2.name === n));
-  box.innerHTML = raceBar() + `
+  const inShow = luckyShowKind === "race";
+  box.innerHTML = (inShow ? showShellOpen("luckyShowExit") : raceBar()) + `
     <div class="card stage-center">
       <span class="pill">${th.label} · KẾT QUẢ</span>
       <div style="font-size:64px;margin-top:8px">🏆</div>
@@ -2197,7 +2311,7 @@ function raceRenderResult(box, th) {
       </div>
       <div style="margin-top:14px"><div class="sub">🏆 Danh sách người thắng:</div>${race.winners.map((w2, i) => `<span class="my-chip">${i + 1}. <b>${esc(w2.prize)}</b> — ${esc(w2.name)}</span>`).join("")}</div>
     </div>
-    <div id="confettiBox"></div>`;
+    <div id="confettiBox"></div>` + (inShow ? "</div>" : "");
 }
 function raceNextPrize() {
   const rest = race.allNames.filter(n => !race.winners.some(w2 => w2.name === n));
@@ -2259,16 +2373,18 @@ function wheelSetup() {
   wheel.names = names.slice(); wheel.allNames = names.slice(); wheel.winners = [];
   wheel.prize = $("racePrize").value.trim() || "Giải may mắn";
   wheel.angle = 0; wheel.winner = null; wheel.spinning = false; wheel.active = true;
+  luckyShowKind = null;
   window.STAGE_MODE = "wheel";
   go("stage");
 }
 function wheelBar() {
-  return `<div class="stage-bar"><span class="pill">🎡 VÒNG QUAY MAY MẮN</span><span class="sub">${esc(wheel.prize)} · ${wheel.names.length} người</span><span class="sp"></span><button class="btn small alt" onclick="wheelClose()">✕ Đóng & về Admin</button></div>`;
+  return `<div class="stage-bar"><span class="pill">🎡 VÒNG QUAY MAY MẮN</span><span class="sub">${esc(wheel.prize)} · ${wheel.names.length} người</span><span class="sp"></span><button class="btn small alt" onclick="luckyShowOpen('wheel')">▶️ Slideshow</button><button class="btn small alt" onclick="wheelClose()">✕ Đóng & về Admin</button></div>`;
 }
-function wheelClose() { wheel.active = false; wheel.spinning = false; window.STAGE_MODE = null; go("admin"); }
+function wheelClose() { luckyShowKind = null; wheel.active = false; wheel.spinning = false; window.STAGE_MODE = null; go("admin"); }
 function wheelRender() {
   const box = $("host-room"); if (!box) return;
-  box.innerHTML = wheelBar() + `
+  const inShow = luckyShowKind === "wheel";
+  box.innerHTML = (inShow ? showShellOpen("luckyShowExit") : wheelBar()) + `
     <div class="card stage-center">
       <span class="pill">🎁 ${esc(wheel.prize)}</span>
       <div class="stage-title" style="font-size:clamp(30px,5.4vw,48px)">Vòng quay may mắn</div>
@@ -2281,7 +2397,7 @@ function wheelRender() {
       <div id="wheelResult" style="margin-top:14px"></div>
       ${wheel.winners.length ? `<div style="margin-top:10px"><div class="sub">🏆 Đã quay được ${wheel.winners.length} giải:</div>${wheel.winners.map((w2, i) => `<span class="my-chip">${i + 1}. <b>${esc(w2.prize)}</b> — ${esc(w2.name)}</span>`).join("")}</div>` : ""}
     </div>
-    <div id="confettiBox"></div>`;
+    <div id="confettiBox"></div>` + (inShow ? "</div>" : "");
   drawWheel();
 }
 function drawWheel() {
@@ -2395,19 +2511,21 @@ function slotSetup() {
     slot.reelLen = slot.len;
   }
   slot.active = true;
+  luckyShowKind = null;
   window.STAGE_MODE = "slot";
   go("stage");
 }
 function slotBar() {
-  return `<div class="stage-bar"><span class="pill">🎰 QUAY MÃ MAY MẮN</span><span class="sub">${esc(slot.prize)}</span><span class="sp"></span><button class="btn small alt" onclick="slotClose()">✕ Đóng & về Admin</button></div>`;
+  return `<div class="stage-bar"><span class="pill">🎰 QUAY MÃ MAY MẮN</span><span class="sub">${esc(slot.prize)}</span><span class="sp"></span><button class="btn small alt" onclick="luckyShowOpen('slot')">▶️ Slideshow</button><button class="btn small alt" onclick="slotClose()">✕ Đóng & về Admin</button></div>`;
 }
-function slotClose() { slot.active = false; slot.spinning = false; window.STAGE_MODE = null; go("admin"); }
+function slotClose() { luckyShowKind = null; slot.active = false; slot.spinning = false; window.STAGE_MODE = null; go("admin"); }
 function slotRender() {
   const box = $("host-room"); if (!box) return;
   const listMode = slot.mode === "list";
   const shown = slot.result || "";
   const reelsCount = slot.reelLen || 4;
-  box.innerHTML = slotBar() + `
+  const inShow = luckyShowKind === "slot";
+  box.innerHTML = (inShow ? showShellOpen("luckyShowExit") : slotBar()) + `
     <div class="card stage-center">
       <span class="pill">🎁 ${esc(slot.prize)}${listMode ? ` · ${slot.entries.length} người trong danh sách · còn ${slot.pool.length} lượt chưa trúng` : ` · quay ký tự tự do`}</span>
       <div class="stage-title" style="font-size:clamp(30px,5.4vw,48px)">${listMode ? "Quay mã trúng thưởng" : "Quay chữ / số may mắn"}</div>
@@ -2423,7 +2541,7 @@ function slotRender() {
       ${slot.winners.length ? `<div style="margin-top:14px"><div class="sub">🏆 Đã trúng ${slot.winners.length} giải:</div>${slot.winners.map((e, i) => `<span class="my-chip">${i + 1}. <b>${esc(e.name)}</b> · mã ${esc(e.code)}</span>`).join("")}</div>` : ""}
       ${!listMode && slot.history.length ? `<div style="margin-top:14px"><div class="sub">Các kết quả đã quay:</div>${slot.history.map(h => `<span class="my-chip" style="font-size:16px;letter-spacing:2px"><b>${esc(h)}</b></span>`).join("")}</div>` : ""}
     </div>
-    <div id="confettiBox"></div>`;
+    <div id="confettiBox"></div>` + (inShow ? "</div>" : "");
 }
 function slotAgain() { slot.pool = slot.entries.slice(); slot.winners = []; slot.lastWinner = null; slot.result = ""; slotRender(); }
 function runReels(finals, chars, done) {
@@ -2494,6 +2612,7 @@ async function voteCreateRoom() {
   if (await DB.get("rooms/" + code)) code = roomCode();
   await DB.set("rooms/" + code, { type: "vote", name: q, question: q, options: opts, maxChoices: maxC, status: "open", createdAt: Date.now(), ownerUid: curUid(), ballots: {} });
   host.code = code;
+  host.show = false;
   window.STAGE_MODE = "room";
   go("stage");
 }
@@ -2510,6 +2629,23 @@ function voteHostRender(room) {
   const totalVotes = counts.reduce((a, b) => a + b, 0);
   const maxCount = Math.max(1, ...counts);
   const closed = room.status === "closed";
+  const rowsHtml = room.options.map((o, i) => {
+    const pct = totalVotes ? Math.round(counts[i] / totalVotes * 100) : 0;
+    return `<div class="vrow"><span class="vlabel">${esc(o)}</span><span class="bar"><i style="width:${Math.round(counts[i] / maxCount * 100)}%;background:${VOTE_COLORS[i % VOTE_COLORS.length]}"></i></span><span class="vnum">${counts[i]} phiếu · ${pct}%</span></div>`;
+  }).join("");
+  /* Trình chiếu sạch: chỉ còn câu hỏi lớn + cột kết quả phóng to + QR mini ở
+     góc (dùng chung khối QR của Slideshow mây) + thanh nổi đóng/mở bình chọn.
+     Bỏ pill, bỏ dòng thống kê, bỏ nút xóa phiếu (xóa phiếu chỉ ở màn thường). */
+  if (host.show) {
+    box.innerHTML = showShellOpen("showExit") + `
+      <div class="slide-q">${esc(room.question)}</div>
+      <div class="show-vote">${rowsHtml}
+      ${!voters ? `<p class="sub center" style="margin-top:10px;font-size:17px">Chưa có ai vote — kết quả sẽ chạy trực tiếp ở đây ngay khi có phiếu đầu tiên 🗳️</p>` : ""}</div>
+      ${slideQrHtml(code)}
+      <div class="hostbar"><button class="btn ${closed ? "" : "alt"}" onclick="voteToggleStatus()">${closed ? "▶ Mở lại bình chọn" : "⏸ Đóng bình chọn"}</button></div>
+    </div>`;
+    return;
+  }
   box.innerHTML = stageBar() + `
     <div class="card stage-center" style="padding-top:16px">
       <span class="pill">🗳️ BÌNH CHỌN · ${closed ? "ĐÃ ĐÓNG" : "ĐANG MỞ"} · Mỗi người chọn tối đa ${room.maxChoices} lựa chọn</span>
@@ -2517,10 +2653,7 @@ function voteHostRender(room) {
       <div class="sub" style="font-size:16px">🙋 ${voters} người đã vote · 🗳️ ${totalVotes} lượt chọn · Mã phòng <b>${code}</b></div>
     </div>
     <div class="card" style="text-align:left">
-      ${room.options.map((o, i) => {
-        const pct = totalVotes ? Math.round(counts[i] / totalVotes * 100) : 0;
-        return `<div class="vrow"><span class="vlabel">${esc(o)}</span><span class="bar"><i style="width:${Math.round(counts[i] / maxCount * 100)}%;background:${VOTE_COLORS[i % VOTE_COLORS.length]}"></i></span><span class="vnum">${counts[i]} phiếu · ${pct}%</span></div>`;
-      }).join("")}
+      ${rowsHtml}
       ${!voters ? `<p class="sub center" style="margin-top:8px">Chưa có ai vote — kết quả sẽ chạy trực tiếp ở đây ngay khi có phiếu đầu tiên 🗳️</p>` : ""}
     </div>
     <div class="card">
@@ -2528,6 +2661,7 @@ function voteHostRender(room) {
         <div class="fix center"><img class="qr-thumb" alt="QR tham gia" title="Bấm để phóng to cho mọi người quét" onclick="qrZoom(true)" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinLink(code))}"><div class="sub">Bấm QR để phóng to</div></div>
         <div>
           <div class="hostbar" style="margin-top:0">
+            <button class="btn" onclick="showOpen()">▶️ Slideshow</button>
             <button class="btn ${closed ? "" : "alt"}" onclick="voteToggleStatus()">${closed ? "▶ Mở lại bình chọn" : "⏸ Đóng bình chọn"}</button>
             <button class="btn alt" onclick="voteClearBallots()">🧹 Xóa hết phiếu, vote lại từ đầu</button>
           </div>
