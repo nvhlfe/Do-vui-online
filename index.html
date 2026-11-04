@@ -1395,9 +1395,12 @@ function superRender() {
     else {
       if (p.role === "pending") acts += `<button class="btn small" onclick="superSetRole('${id}','admin')">✅ Duyệt</button> `;
       if (p.role === "admin") acts += `<button class="btn small alt" onclick="superSetRole('${id}','pending')">↩ Thu hồi quyền</button> `;
-      if (p.role !== "super") acts += p.disabled
-        ? `<button class="btn small alt" onclick="superSetDisabled('${id}',false)">🔓 Mở khóa</button>`
-        : `<button class="btn small danger" onclick="superSetDisabled('${id}',true)">🔒 Khóa</button>`;
+      if (p.role !== "super") {
+        acts += p.disabled
+          ? `<button class="btn small alt" onclick="superSetDisabled('${id}',false)">🔓 Mở khóa</button> `
+          : `<button class="btn small danger" onclick="superSetDisabled('${id}',true)">🔒 Khóa</button> `;
+        acts += `<button class="btn small danger" onclick="superDeleteAccount('${id}')">🗑️ Xóa tài khoản</button>`;
+      }
     }
     return `<tr><td><b>${esc(p.displayName || p.email || id)}</b><br><span class="sub">${esc(p.email || "")}${when ? " · tạo " + when : ""}</span></td><td>${roleLabel(p)}</td><td class="r">${acts}</td></tr>`;
   }).join("") + `</table>`;
@@ -1410,6 +1413,14 @@ async function superSetDisabled(id, dis) {
   if (AUTH.user && id === AUTH.user.uid) return;
   if (dis && !confirm("Khóa tài khoản này? Họ sẽ không vào được khu Admin và không ghi được dữ liệu nữa.")) return;
   await DB.update("admins/" + id, { disabled: !!dis });
+}
+async function superDeleteAccount(id) {
+  if (AUTH.user && id === AUTH.user.uid) return; /* không tự xóa chính mình, kể cả khi gọi thẳng từ console */
+  const p = (allAdmins || {})[id] || {};
+  const label = p.displayName || p.email || id;
+  if (!confirm("Xóa hẳn tài khoản " + label + "?\n\nHồ sơ tài khoản và TOÀN BỘ bộ câu hỏi của họ sẽ bị xóa, không khôi phục được.\nCác phòng họ đã tạo KHÔNG bị xóa.\n\nNếu họ đăng nhập lại bằng email cũ, tài khoản sẽ được tạo lại ở trạng thái chờ duyệt như một tài khoản mới (bộ câu hỏi cũ không quay lại).")) return;
+  await DB.remove("admins/" + id);
+  await DB.remove("users/" + id);
 }
 
 /* ---------- Danh sách phòng theo quyền sở hữu ---------- */
