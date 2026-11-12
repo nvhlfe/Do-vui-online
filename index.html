@@ -277,6 +277,20 @@ body.joinmode nav.tabs{display:none!important}
 .card.mode-lucky h2{color:#D97706}
 .card.mode-lucky .mode-tag{background:#D97706}
 .card.mode-lucky .btn:not(.alt):not(.danger){background:#D97706;box-shadow:0 6px 0 #92400E}
+/* ==== Thanh chọn game đầu khu Admin: bấm nút chỉ hiện thẻ tạo game tương ứng ==== */
+.game-picker{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 2px}
+.gp-btn{flex:1 1 150px;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 10px;border-radius:14px;border:3px solid var(--line);background:#fff;font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-weight:800;font-size:17px;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--line)}
+.gp-btn:active{transform:translateY(2px)}
+.gp-btn .gp-ic{font-size:20px;line-height:1}
+.gp-btn.gp-quiz{border-color:#7B2FF7;color:#7B2FF7}
+.gp-btn.gp-cloud{border-color:#00B8E6;color:#0284C7}
+.gp-btn.gp-vote{border-color:#FF5D8F;color:#DB2777}
+.gp-btn.gp-lucky{border-color:#FFA602;color:#D97706}
+.gp-btn.on{color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.18)}
+.gp-btn.gp-quiz.on{background:#7B2FF7}
+.gp-btn.gp-cloud.on{background:#00B8E6}
+.gp-btn.gp-vote.on{background:#FF5D8F}
+.gp-btn.gp-lucky.on{background:#FFA602}
 /* ==== Người chơi: banner thứ hạng sau mỗi câu ==== */
 .rank-banner{margin:16px auto 2px;max-width:520px;border-radius:16px;padding:13px 18px;font-weight:700;font-size:16px;background:var(--soft);border:2px solid var(--line)}
 .rank-banner .rk{font-family:"Baloo 2","Be Vietnam Pro",sans-serif;font-size:22px;color:var(--purple)}
@@ -408,28 +422,6 @@ table.lb td .btn{margin:2px 0}
         <div><span class="pill" id="adminWho">👋 Xin chào Admin! Bạn đang ở khu điều khiển trò chơi.</span></div>
         <div class="fix"><button class="btn small alt" onclick="authLogout()">Đăng xuất</button></div>
       </div>
-      <div class="card" id="audio-panel">
-        <h2>🎵 Nhạc &amp; hiệu ứng âm thanh</h2>
-        <div class="sub">Trang đã có sẵn bộ nhạc hiệu (bắt đầu câu hỏi, tích tắc đếm ngược, hết giờ, công bố đáp án, vinh danh, tiếng vỗ tay…). Nhạc nền thì Admin tự tải file nhạc của mình lên — file lưu ngay trên máy này nên lần sau mở trang vẫn còn, phát trên máy đang chiếu.</div>
-        <label>Nhạc nền của bạn</label>
-        <div id="bgmInfo" class="sub">Chưa có nhạc nền nào.</div>
-        <div class="hostbar">
-          <label class="btn alt" style="text-align:center;cursor:pointer">⬆️ Tải nhạc nền lên<input type="file" id="bgmFile" accept="audio/*" class="hidden" onchange="bgmUpload(this)"></label>
-          <button class="btn alt" id="bgmPlayBtn" onclick="toggleBgm()">▶ Phát nhạc nền</button>
-          <button class="btn alt" onclick="bgmRemove()">🗑 Xóa nhạc nền</button>
-        </div>
-        <label>Âm lượng nhạc nền · <span id="bgmVolVal">60%</span></label>
-        <input type="range" id="bgmVol" min="0" max="100" value="60" oninput="setBgmVol(this.value)">
-        <label>Âm lượng hiệu ứng · <span id="sfxVolVal">80%</span></label>
-        <input type="range" id="sfxVol" min="0" max="100" value="80" oninput="setSfxVol(this.value)">
-        <div class="hostbar">
-          <button class="btn alt" id="sfxToggleBtn" onclick="toggleSfx()">🔔 Hiệu ứng: Bật</button>
-          <button class="btn alt" onclick="sfxJingle()">▶ Nghe thử: Bắt đầu</button>
-          <button class="btn alt" onclick="sfxReveal()">▶ Nghe thử: Công bố</button>
-          <button class="btn alt" onclick="sfxVictory()">▶ Nghe thử: Vinh danh</button>
-        </div>
-        <div class="sub">Nhạc nền tự phát khi mở phòng (ở sảnh chờ) và tự nhỏ xuống 40% khi đang chạy câu hỏi để không át tiếng. Trên màn hình chiếu cũng có nút bật/tắt nhạc và thanh chỉnh âm lượng nhanh.</div>
-      </div>
       <div id="super-panel" class="card hidden">
         <span class="mode-tag" style="background:var(--purple)">Quản lý chính</span>
         <h2>👑 Quản lý tài khoản Admin</h2>
@@ -443,6 +435,12 @@ table.lb td .btn{margin:2px 0}
         <div id="roomsList" style="margin-top:10px"></div>
       </div>
       <div id="host-active" class="card hidden" style="background:var(--soft)"></div>
+      <div id="game-picker" class="game-picker">
+        <button type="button" class="gp-btn gp-quiz on" data-game="quiz" onclick="pickGame('quiz')"><span class="gp-ic">🎯</span> Trắc nghiệm</button>
+        <button type="button" class="gp-btn gp-cloud" data-game="cloud" onclick="pickGame('cloud')"><span class="gp-ic">☁️</span> Đám mây chữ</button>
+        <button type="button" class="gp-btn gp-vote" data-game="vote" onclick="pickGame('vote')"><span class="gp-ic">🗳️</span> Bình chọn</button>
+        <button type="button" class="gp-btn gp-lucky" data-game="lucky" onclick="pickGame('lucky')"><span class="gp-ic">🎁</span> Lucky Draw</button>
+      </div>
       <div id="host-create" class="card mode-quiz">
         <span class="mode-tag">Trắc nghiệm</span>
         <h2>🎤 Mở phòng chơi mới (màn hình Chính)</h2>
@@ -454,7 +452,7 @@ table.lb td .btn{margin:2px 0}
         <div style="margin-top:16px"><button class="btn" onclick="hostCreateRoom()">🚀 Mở phòng & rủ mọi người vào</button></div>
         <div class="sub" style="margin-top:10px">Chưa ưng bộ câu hỏi nào? <a href="#" onclick="go('admin');setTimeout(()=>{var e=document.getElementById('admin-qpanel');if(e)e.scrollIntoView({behavior:'smooth'})},80);return false;">Tự tạo / nhập từ Excel ở phần dưới →</a></div>
       </div>
-      <div id="cloud-create" class="card mode-cloud">
+      <div id="cloud-create" class="card mode-cloud hidden">
         <span class="mode-tag">Đám mây chữ</span>
         <h2>☁️ Đám mây chữ — trả lời tự do</h2>
         <div class="sub">Admin đặt 1 câu hỏi mở, mọi người quét QR vào trả lời bằng vài từ ngắn — <b>không cần nhập tên</b>. Các từ sẽ hiện lên màn hình lớn của Admin thành một đám mây chữ: từ nào được nhiều người nhắc tới sẽ to dần lên.</div>
@@ -464,7 +462,7 @@ table.lb td .btn{margin:2px 0}
         <select id="cloudMaxWords"><option value="3">3 từ</option><option value="5" selected>5 từ</option><option value="10">10 từ</option></select>
         <div style="margin-top:16px"><button class="btn" onclick="cloudCreateRoom()">☁️ Mở phòng đám mây chữ</button></div>
       </div>
-      <div id="vote-create" class="card mode-vote">
+      <div id="vote-create" class="card mode-vote hidden">
         <span class="mode-tag">Bình chọn</span>
         <h2>🗳️ Bình chọn — Vote trực tiếp</h2>
         <div class="sub">Admin đặt câu hỏi và các lựa chọn, mọi người quét QR vào chọn trên điện thoại — <b>không cần nhập tên</b>. Kết quả hiện trực tiếp trên màn hình chiếu theo % phiếu.</div>
@@ -479,7 +477,7 @@ Cần cải thiện</textarea>
         <input type="number" id="voteMax" value="1" min="1" max="12" step="1">
         <div style="margin-top:14px"><button class="btn" onclick="voteCreateRoom()">🗳️ Mở phòng bình chọn</button></div>
       </div>
-      <div class="card mode-lucky" id="race-create">
+      <div class="card mode-lucky hidden" id="race-create">
         <span class="mode-tag">Lucky Draw</span>
         <h2>🎁 Lucky Draw — Quay thưởng may mắn</h2>
         <div class="sub">Ba hình thức quay thưởng chiếu lên màn hình lớn: cuộc đua về đích, vòng quay may mắn và quay chữ/số tìm mã trúng thưởng. Mọi người chỉ xem và cổ vũ — không cần dùng điện thoại.</div>
@@ -840,6 +838,21 @@ function startTimer(getRemain, onTick) {
 <script>
 /* ================= MC / HOST ================= */
 let host = { code: null, room: null };
+/* ---- Thanh chọn game đầu khu Admin: bấm 1 nút chỉ hiện thẻ tạo game tương ứng, khỏi kéo trang ---- */
+let gameTab = "quiz";
+try { gameTab = localStorage.getItem("dovui_game_tab") || "quiz"; } catch (e) {}
+if (!["quiz", "cloud", "vote", "lucky"].includes(gameTab)) gameTab = "quiz";
+const GAME_CARDS = { quiz: "host-create", cloud: "cloud-create", vote: "vote-create", lucky: "race-create" };
+function applyGameTab() {
+  Object.entries(GAME_CARDS).forEach(([g, id]) => { const el = $(id); if (el) el.classList.toggle("hidden", g !== gameTab); });
+  document.querySelectorAll("#game-picker .gp-btn").forEach(b => b.classList.toggle("on", b.dataset.game === gameTab));
+}
+function pickGame(g) {
+  if (!GAME_CARDS[g]) return;
+  gameTab = g;
+  try { localStorage.setItem("dovui_game_tab", g); } catch (e) {}
+  applyGameTab();
+}
 async function hostInit() {
   const pick = $("hostSetPick");
   const off = DB.on(mySetsPath(), sets => {
@@ -854,12 +867,13 @@ async function hostInit() {
     if (!pick.options.length) pick.innerHTML = "<option value=''>— Chưa có bộ câu hỏi —</option>";
   });
   unsubs.push(off); if (typeof adminSubs !== "undefined") adminSubs.push(off);
-  const cc = $("cloud-create"), ha = $("host-active"), vc = $("vote-create");
+  const cc = $("cloud-create"), ha = $("host-active"), vc = $("vote-create"), rc = $("race-create"), gp = $("game-picker");
   if (host.code) {
-    $("host-create").classList.add("hidden"); if (cc) cc.classList.add("hidden"); if (vc) vc.classList.add("hidden");
+    $("host-create").classList.add("hidden"); if (cc) cc.classList.add("hidden"); if (vc) vc.classList.add("hidden"); if (rc) rc.classList.add("hidden"); if (gp) gp.classList.add("hidden");
     if (ha) { ha.classList.remove("hidden"); ha.innerHTML = `<div class="row"><div>📺 <b>Đang có phòng ${esc(host.code)}</b> ở màn hình chiếu${host.room ? " — " + esc(host.room.name || host.room.prompt || "") : ""}. Khu Admin chỉ để quản lý câu hỏi, điều khiển game ở màn hình chiếu nhé.</div><div class="fix">${host.room ? (host.room.type === "cloud" ? '<button class="btn small" onclick="slideOpenGo()">▶️ Slideshow</button> ' : '<button class="btn small" onclick="showOpenGo()">▶️ Slideshow</button> ') : ""}<button class="btn small" onclick="go('stage')">Quay lại màn hình chiếu</button> <button class="btn small danger" onclick="hostReset(false)">Đóng phòng</button></div></div>`; }
   } else {
-    $("host-create").classList.remove("hidden"); if (cc) cc.classList.remove("hidden"); if (vc) vc.classList.remove("hidden");
+    if (gp) gp.classList.remove("hidden");
+    applyGameTab();
     if (ha) { ha.classList.add("hidden"); ha.innerHTML = ""; }
   }
 }
@@ -885,12 +899,12 @@ async function hostCreateRoom() {
 }
 function hostWatch() {
   clearSubs();
-  const off = DB.on("rooms/" + host.code, room => { host.room = room; hostRender(); if (typeof fxAfterRender === "function") fxAfterRender(room); });
+  const off = DB.on("rooms/" + host.code, room => { host.room = room; hostRender(); });
   unsubs.push(off);
 }
 function joinLink(code) { return location.origin + location.pathname + "?join=" + code; }
 function stageBar() {
-  return `<div class="stage-bar"><span class="pill">📺 MÀN HÌNH CHIẾU</span><span class="sub">Phòng <b>${esc(host.code || "")}</b></span><span class="sp"></span><button class="btn small alt" id="stageBgmBtn" onclick="toggleBgm()">🎵 Nhạc nền</button><button class="btn small alt" id="stageSfxBtn" onclick="toggleSfx()">🔔 Hiệu ứng</button><input type="range" id="stageBgmVol" min="0" max="100" value="60" title="Âm lượng nhạc nền" style="width:90px" oninput="setBgmVol(this.value)"><button class="btn small alt" onclick="go('admin')">← Về khu Admin</button><button class="btn small danger" onclick="hostReset(false)">Đóng phòng</button></div>`;
+  return `<div class="stage-bar"><span class="pill">📺 MÀN HÌNH CHIẾU</span><span class="sub">Phòng <b>${esc(host.code || "")}</b></span><span class="sp"></span><button class="btn small alt" onclick="go('admin')">← Về khu Admin</button><button class="btn small danger" onclick="hostReset(false)">Đóng phòng</button></div>`;
 }
 /* ---------- Trình chiếu sạch (Slideshow) cho Trắc nghiệm & Bình chọn ----------
    Cờ riêng host.show (không đụng Slideshow mây dùng host.cloudSlide): khi bật,
@@ -968,7 +982,6 @@ function hostRender() {
       startTimer(() => Math.max(0, (room.qStartedAt + total * 1000 - Date.now()) / 1000), r => {
         const el = $("hostTimer"); if (!el) { stopTimer(); return; }
         const sec = Math.ceil(r);
-        if (sec !== host._tickSec) { host._tickSec = sec; if (typeof sfxTick === "function") { if (sec <= 5 && sec > 0) sfxTick(); if (sec === 0) sfxTimeUp(); } }
         el.textContent = sec; el.classList.toggle("low", r <= 5);
       });
     }, 0);
@@ -1020,8 +1033,7 @@ function podEnsure(top) {
     if (host.pod !== pod) return;
     if (pod.shown < pod.steps.length) {
       const r = pod.steps[pod.shown]; pod.shown++;
-      if (r === 1) { if (typeof sfxVictory === "function") sfxVictory(); if (typeof confettiBurst === "function") confettiBurst(); }
-      else if (typeof sfxReveal === "function") sfxReveal();
+      if (r === 1) { if (typeof sfxApplause === "function") sfxApplause(); if (typeof confettiBurst === "function") confettiBurst(); }
       hostRender();
       pod.timers.push(setTimeout(tick, r === 1 ? 2600 : 1800));
     } else { pod.done = true; hostRender(); }
@@ -1098,7 +1110,6 @@ function playerLeave() {
 function playerRender() {
   const box = $("player-room"), room = me.room;
   if (!room) { box.innerHTML = "<div class='card center'><h2>Phòng đã đóng rồi</h2><p class='sub'>ADMIN đã mở ván mới rồi. Bạn quay lại vào phòng mới nhé!</p><button class='btn' onclick='playerLeave()'>← Vào phòng khác</button></div>"; return; }
-  if (room.status === "revealed" && me._fxRev !== room.qIndex && typeof sfxGood === "function") { me._fxRev = room.qIndex; const pa = ((room.players || {})[me.pid] || {}).answers; const aa = pa && pa[room.qIndex]; if (aa) (aa.correct ? sfxGood : sfxBad)(); }
   const player = (room.players || {})[me.pid] || { name: me.name, answers: {} };
   const mine = scoreOf(player);
   const myHead = `<div class="card" style="padding:14px 18px"><div class="row"><div><b>👤 ${esc(player.name)}</b> <span class="pill">Phòng ${esc(me.code)}</span></div><div class="fix sub">Điểm của bạn: <b style="color:var(--purple2);font-size:17px">${mine.total}</b> · Đúng ${mine.correct} câu</div></div></div>`;
@@ -1506,7 +1517,6 @@ function adminInit() {
   adminSubs.forEach(u => { try { u(); } catch (e) {} }); adminSubs = [];
   if (!adminAuthed) return;
   hostInit();
-  if (typeof audioInit === "function") audioInit();
   const off = DB.on(mySetsPath(), sets => { admin.sets = sets || {}; adminRender(); });
   unsubs.push(off); adminSubs.push(off);
   const offR = DB.on("rooms", rooms => { adminRooms = rooms || {}; roomsRender(); });
@@ -2052,126 +2062,42 @@ async function submitCloudAnswer() {
 }
 </script>
 
-<audio id="bgmAudio" loop preload="auto"></audio>
-
 <script>
-/* ================= NHẠC HIỆU & NHẠC NỀN ================= */
-let audioSet = { bgmVol: 60, sfxVol: 80, sfxOn: true, bgmAuto: true, bgmName: "" };
-try { Object.assign(audioSet, JSON.parse(localStorage.getItem("dovui_audio") || "{}")); } catch (e) {}
-let AC = null, bgmReady = false, bgmAutoTriedFor = null, audioLoaded = false;
-function saveAudioSet() { try { localStorage.setItem("dovui_audio", JSON.stringify(audioSet)); } catch (e) {} }
-function ac() { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); return AC; } catch (e) { return null; } }
-window.addEventListener("pointerdown", () => { ac(); }, { passive: true });
-function tone(f, delay, dur, type, vol, slide) {
-  const c = ac(); if (!c || audioSet.sfxOn === false) return;
+/* ================= VỖ TAY CHÚC MỪNG KẾT QUẢ =================
+   Trang không còn nhạc nền và hiệu ứng âm thanh khi chơi.
+   Âm thanh duy nhất còn lại: tiếng vỗ tay tổng hợp bằng WebAudio (không cần
+   file ngoài), phát trên màn hình chiếu đúng lúc công bố kết quả: giải nhất
+   ở podium kết thúc ván trắc nghiệm, đua về đích, vòng quay công bố người
+   thắng và quay mã hoàn tất 1 hạng giải. */
+let AC = null;
+function applauseCtx() { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); return AC; } catch (e) { return null; } }
+window.addEventListener("pointerdown", () => { applauseCtx(); }, { passive: true });
+function clapBurst(c, t, vol) {
   try {
-    const t = c.currentTime + (delay || 0);
-    const o = c.createOscillator(), g = c.createGain();
-    o.type = type || "sine"; o.frequency.setValueAtTime(f, t);
-    if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
-    const v = Math.max(0.0002, (vol || 0.18) * ((audioSet.sfxVol || 0) / 100));
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(v, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.05);
-  } catch (e) {}
-}
-function noiseHit(delay, dur, vol, freq) {
-  const c = ac(); if (!c || audioSet.sfxOn === false) return;
-  try {
-    const t = c.currentTime + (delay || 0);
+    const dur = 0.09 + Math.random() * 0.05;
     const len = Math.max(1, Math.floor(c.sampleRate * dur));
     const buf = c.createBuffer(1, len, c.sampleRate);
     const d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 1.6);
     const src = c.createBufferSource(); src.buffer = buf;
-    const f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = freq || 1200;
-    const g = c.createGain(); g.gain.value = Math.max(0.0002, (vol || 0.12) * ((audioSet.sfxVol || 0) / 100));
-    src.connect(f); f.connect(g); g.connect(c.destination); src.start(t);
+    const bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 1100 + Math.random() * 900; bp.Q.value = 0.9;
+    const hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 500;
+    const g = c.createGain(); g.gain.value = Math.max(0.0002, vol * (0.7 + Math.random() * 0.5));
+    src.connect(bp); bp.connect(hp); hp.connect(g); g.connect(c.destination);
+    src.start(t);
   } catch (e) {}
 }
-function sfxPop() { tone(520, 0, 0.09, "sine", 0.16, 880); }
-function sfxTick() { tone(1050, 0, 0.05, "square", 0.05); }
-function sfxTimeUp() { tone(185, 0, 0.18, "sawtooth", 0.16); tone(185, 0.24, 0.32, "sawtooth", 0.16); }
-function sfxJingle() { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.09, 0.22, "triangle", 0.2)); tone(262, 0, 0.4, "sine", 0.1); }
-function sfxReveal() { for (let i = 0; i < 6; i++) noiseHit(i * 0.08, 0.07, 0.10, 900); [523, 659, 784].forEach(f => tone(f, 0.52, 0.35, "triangle", 0.17)); }
-function sfxVictory() { [523, 523, 523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.13, 0.26, "triangle", 0.2)); [0.85, 1.0, 1.18, 1.33, 1.55, 1.75, 2.0].forEach(d => noiseHit(d, 0.16, 0.09, 1400)); tone(1319, 0.8, 0.5, "sine", 0.12); }
-function sfxGood() { tone(784, 0, 0.12, "sine", 0.18); tone(1047, 0.1, 0.22, "sine", 0.18); }
-function sfxBad() { tone(220, 0, 0.28, "sawtooth", 0.10, 155); }
-/* ---- Nhạc nền (file Admin tự tải, lưu IndexedDB trên máy này) ---- */
-function idbOpen() { return new Promise((res, rej) => { if (!window.indexedDB) return rej(new Error("noidb")); const r = indexedDB.open("dovui-online", 1); r.onupgradeneeded = () => { try { r.result.createObjectStore("files"); } catch (e) {} }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
-async function idbPut(k, v) { try { const db = await idbOpen(); return new Promise((res, rej) => { const tx = db.transaction("files", "readwrite"); tx.objectStore("files").put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (e) {} }
-async function idbDel(k) { try { const db = await idbOpen(); return new Promise((res, rej) => { const tx = db.transaction("files", "readwrite"); tx.objectStore("files").delete(k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (e) {} }
-async function idbGet(k) { try { const db = await idbOpen(); return new Promise((res, rej) => { const rq = db.transaction("files", "readonly").objectStore("files").get(k); rq.onsuccess = () => res(rq.result || null); rq.onerror = () => rej(rq.error); }); } catch (e) { return null; } }
-function bgmEl() { return $("bgmAudio"); }
-function setBgmSource(url, name) { const el = bgmEl(); if (!el) return; if (url) { el.src = url; bgmReady = true; } else { el.removeAttribute("src"); el.load(); bgmReady = false; } audioSet.bgmName = name || ""; saveAudioSet(); applyBgmVolume(window.host && host.room ? host.room.status : null); refreshAudioUI(); }
-async function bgmUpload(input) {
-  const f = input.files && input.files[0]; if (!f) return;
-  await idbPut("bgm", f);
-  setBgmSource(URL.createObjectURL(f), f.name);
-  const el = bgmEl(); if (el) { try { const pr = el.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} }
-  input.value = "";
-}
-async function bgmRemove() { await idbDel("bgm"); setBgmSource(null, ""); refreshAudioUI(); }
-function applyBgmVolume(status) { const el = bgmEl(); if (!el) return; const duck = status === "playing" ? 0.4 : 1; el.volume = Math.min(1, Math.max(0, (audioSet.bgmVol / 100) * duck)); }
-function toggleBgm() {
-  const el = bgmEl(); if (!el) return;
-  if (!bgmReady) { alert("Chưa có nhạc nền nào. Vào khu Admin, mục “Nhạc & hiệu ứng” để tải file nhạc lên trước nhé!"); return; }
-  if (el.paused) { try { const pr = el.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} } else el.pause();
-  setTimeout(refreshAudioUI, 60);
-}
-function setBgmVol(v) { audioSet.bgmVol = parseInt(v, 10) || 0; saveAudioSet(); applyBgmVolume(window.host && host.room ? host.room.status : null); refreshAudioUI(); }
-function setSfxVol(v) { audioSet.sfxVol = parseInt(v, 10) || 0; saveAudioSet(); refreshAudioUI(); }
-function toggleSfx() { audioSet.sfxOn = audioSet.sfxOn === false ? true : false; saveAudioSet(); refreshAudioUI(); if (audioSet.sfxOn) sfxPop(); }
-function refreshAudioUI() {
-  const el = bgmEl();
-  const info = $("bgmInfo"); if (info) info.textContent = bgmReady ? "🎵 Đang dùng: " + (audioSet.bgmName || "nhạc nền của bạn") + (el && !el.paused ? " · Đang phát" : " · Đang tắt") : "Chưa có nhạc nền nào — hãy tải 1 file nhạc (mp3) lên nhé.";
-  const pb = $("bgmPlayBtn"); if (pb) pb.textContent = el && !el.paused ? "⏸ Tạm dừng nhạc nền" : "▶ Phát nhạc nền";
-  const bv = $("bgmVol"); if (bv && document.activeElement !== bv) bv.value = audioSet.bgmVol;
-  const bvv = $("bgmVolVal"); if (bvv) bvv.textContent = audioSet.bgmVol + "%";
-  const sv = $("sfxVol"); if (sv && document.activeElement !== sv) sv.value = audioSet.sfxVol;
-  const svv = $("sfxVolVal"); if (svv) svv.textContent = audioSet.sfxVol + "%";
-  const tb = $("sfxToggleBtn"); if (tb) tb.textContent = audioSet.sfxOn === false ? "🔕 Hiệu ứng: Tắt" : "🔔 Hiệu ứng: Bật";
-  refreshStageAudioBtns();
-}
-function refreshStageAudioBtns() {
-  const el = bgmEl();
-  const b = $("stageBgmBtn"); if (b) b.textContent = el && !el.paused ? "⏸ Nhạc nền" : "🎵 Nhạc nền";
-  const s = $("stageSfxBtn"); if (s) s.textContent = audioSet.sfxOn === false ? "🔕 Hiệu ứng" : "🔔 Hiệu ứng";
-  const r = $("stageBgmVol"); if (r && document.activeElement !== r) r.value = audioSet.bgmVol;
-}
-async function audioInit() {
-  refreshAudioUI();
-  if (audioLoaded) return; audioLoaded = true;
-  const blob = await idbGet("bgm");
-  if (blob) setBgmSource(URL.createObjectURL(blob), audioSet.bgmName || blob.name || "nhạc nền của bạn");
-  refreshAudioUI();
-}
-/* ---- Kích hoạt hiệu ứng theo diễn biến phòng ---- */
-let fxPrev = { status: null, qIndex: -1, pCount: 0, aCount: 0, code: null };
-function fxAfterRender(room) {
-  if (!room) { fxPrev = { status: null, qIndex: -1, pCount: 0, aCount: 0, code: null }; applyBgmVolume(null); return; }
-  const code = window.host ? host.code : null;
-  const pCount = Object.keys(room.players || {}).length;
-  const aCount = Object.keys(room.answers || room.ballots || {}).length;
-  const same = fxPrev.code === code && fxPrev.code !== null;
-  if (room.type === "cloud" || room.type === "vote") {
-    if (same && aCount > fxPrev.aCount) sfxPop();
-  } else {
-    if (same && room.status === "lobby" && pCount > fxPrev.pCount) sfxPop();
-    if (!same || fxPrev.status !== room.status || fxPrev.qIndex !== room.qIndex) {
-      if (room.status === "playing") sfxJingle();
-      else if (room.status === "revealed") sfxReveal();
-      else if (room.status === "finished") { /* Nhạc vinh danh phát đúng lúc công bố GIẢI NHẤT ở sân khấu podium */ }
+function sfxApplause() {
+  const c = applauseCtx(); if (!c) return;
+  try {
+    const t0 = c.currentTime + 0.03, total = 1.8;
+    for (let t = 0; t < total; t += 0.045 + Math.random() * 0.075) {
+      const env = 0.55 + 0.45 * Math.sin(Math.PI * Math.min(1, t / total));
+      clapBurst(c, t0 + t, 0.16 * env);
+      if (Math.random() < 0.55) clapBurst(c, t0 + t + 0.025 + Math.random() * 0.03, 0.11 * env);
     }
-  }
-  fxPrev = { status: room.status, qIndex: room.qIndex || 0, pCount, aCount, code };
-  applyBgmVolume(room.status);
-  if (room.status === "lobby" && bgmReady && audioSet.bgmAuto !== false && bgmAutoTriedFor !== code) {
-    bgmAutoTriedFor = code;
-    const el = bgmEl(); if (el && el.paused) { try { const pr = el.play(); if (pr && pr.then) pr.then(() => refreshAudioUI()).catch(() => {}); } catch (e) {} }
-  }
-  refreshStageAudioBtns();
+    for (let i = 0; i < 7; i++) clapBurst(c, t0 + total + 0.05 + i * 0.09, 0.13 * (1 - i / 8));
+  } catch (e) {}
 }
 </script>
 
@@ -2403,8 +2329,8 @@ function raceCountdown() {
   c.classList.remove("hidden");
   let n = 3;
   const stepFn = () => {
-    if (n > 0) { c.textContent = n; if (typeof sfxTick === "function") sfxTick(); n--; setTimeout(stepFn, race.countStep); }
-    else { c.textContent = "ĐUA!"; if (typeof sfxJingle === "function") sfxJingle(); setTimeout(() => { c.classList.add("hidden"); raceBegin(); }, Math.min(400, race.countStep)); }
+    if (n > 0) { c.textContent = n; n--; setTimeout(stepFn, race.countStep); }
+    else { c.textContent = "ĐUA!"; setTimeout(() => { c.classList.add("hidden"); raceBegin(); }, Math.min(400, race.countStep)); }
   };
   stepFn();
 }
@@ -2436,7 +2362,7 @@ function raceTick() {
   });
   race.leader = leader;
   const leadR = race.racers[leader];
-  if (race.lastLeader !== leader && elapsed > 1.2) { race.comment = "🔥 " + leadR.name + " vươn lên dẫn đầu!"; race.lastLeader = leader; if (typeof sfxPop === "function") sfxPop(); }
+  if (race.lastLeader !== leader && elapsed > 1.2) { race.comment = "🔥 " + leadR.name + " vươn lên dẫn đầu!"; race.lastLeader = leader; }
   const sorted = race.racers.map((r, i) => i).sort((a, b) => race.racers[b].p - race.racers[a].p);
   if (sorted.length > 1 && race.racers[sorted[0]].p > 82 && race.racers[sorted[0]].p - race.racers[sorted[1]].p < 6) race.comment = "😱 Sát nút ở vạch đích! " + race.racers[sorted[0]].name + " và " + race.racers[sorted[1]].name + " đang kề vai nhau!";
   const cm = $("raceComment"); if (cm && cm.textContent !== race.comment) cm.textContent = race.comment;
@@ -2462,7 +2388,7 @@ function raceFinish() {
   race.winner = group[0] || race.winner;
   race.lastGroup = group.slice();
   group.forEach(name => race.winners.push({ prize: tier.name, tier: tier.name, tierIndex: race.tierIdx || 0, name }));
-  if (typeof sfxVictory === "function") sfxVictory();
+  if (typeof sfxApplause === "function") sfxApplause();
   raceRender();
   confettiBurst();
 }
@@ -2633,7 +2559,7 @@ function wheelSpin() {
     wheel.angle = start + total * e;
     drawWheel();
     const idx = Math.floor(wheel.angle / step);
-    if (idx !== wheel.lastTickIdx) { wheel.lastTickIdx = idx; if (typeof sfxTick === "function") sfxTick(); }
+    if (idx !== wheel.lastTickIdx) { wheel.lastTickIdx = idx; }
     if (t < 1) requestAnimationFrame(frame);
     else {
       wheel.angle = start + total;
@@ -2641,7 +2567,7 @@ function wheelSpin() {
       wheel.spinning = false;
       wheel.winner = group[0] || wheel.names[winIdx];
       (wheel.currentGroup && wheel.currentGroup.length ? wheel.currentGroup : [wheel.winner]).forEach(name => wheel.winners.push({ prize: tier.name, tier: tier.name, tierIndex: wheel.tierIdx || 0, name }));
-      if (typeof sfxVictory === "function") sfxVictory();
+      if (typeof sfxApplause === "function") sfxApplause();
       wheelShowResult();
       if (typeof confettiBurst === "function") confettiBurst();
     }
@@ -2775,7 +2701,6 @@ function runReels(finals, chars, done) {
       clearInterval(iv);
       const e3 = $("reel-" + i);
       if (e3) { e3.textContent = fin; e3.classList.add("stopped"); }
-      if (typeof sfxPop === "function") sfxPop();
       stopped++;
       if (stopped === finals.length) done();
     }, (850 + i * 780) / pace);
@@ -2799,7 +2724,6 @@ function slotSpinListOne() {
     slot.winners.push(record);
     slot.currentGroup.push(record);
     slot.spinning = false;
-    if (typeof sfxVictory === "function") sfxVictory();
     if (slot.currentGroup.length < slot.chainTarget && slot.pool.length) {
       slot.chainWaiting = true;
       slotRender();
@@ -2809,7 +2733,9 @@ function slotSpinListOne() {
         if (slot.active && slot.chainActive && !slot.spinning) slotSpinListOne();
       }, 420);
     } else {
+      /* Chuỗi quay của hạng đã xong — công bố nhóm thắng kèm tiếng vỗ tay */
       slot.chainActive = false; slot.chainComplete = true;
+      if (typeof sfxApplause === "function") sfxApplause();
       slotRender();
       if (typeof confettiBurst === "function") confettiBurst();
     }
@@ -2833,7 +2759,6 @@ function slotSpin() {
       slot.result = finals.join("");
       slot.history.unshift(slot.result);
       slot.spinning = false;
-      if (typeof sfxVictory === "function") sfxVictory();
       slotRender();
       if (typeof confettiBurst === "function") confettiBurst();
     });
